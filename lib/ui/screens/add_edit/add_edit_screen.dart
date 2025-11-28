@@ -193,87 +193,83 @@ class _AddEditScreenState extends State<AddEditScreen> {
         ? 'Pilih Tanggal & Waktu'
         : DateFormat('dd/MM/yyyy HH:mm').format(_selectedDateTime!);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tambah Destinasi Baru'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveDestination, // Panggil fungsi simpan
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        // Widget wajib: SingleChildScrollView
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              // Text Field Wajib: Nama Destinasi
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nama Destinasi'),
-                validator: (value) =>
-                    value!.isEmpty ? 'Nama wajib diisi.' : null,
+    return SingleChildScrollView(
+      // Widget wajib: SingleChildScrollView
+      padding: const EdgeInsets.all(16.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            // Text Field Wajib: Nama Destinasi
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Nama Destinasi'),
+              validator: (value) => value!.isEmpty ? 'Nama wajib diisi.' : null,
+            ),
+            const SizedBox(height: 16),
+            // Text Field Wajib: Deskripsi
+            TextFormField(
+              controller: _descController,
+              decoration: const InputDecoration(
+                labelText: 'Deskripsi / Catatan',
               ),
-              const SizedBox(height: 16),
-              // Text Field Wajib: Deskripsi
-              TextFormField(
-                controller: _descController,
-                decoration: const InputDecoration(
-                  labelText: 'Deskripsi / Catatan',
-                ),
-                maxLines: 3,
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            // Text Field Wajib: Kategori
+            TextFormField(
+              controller: _categoryController,
+              decoration: const InputDecoration(
+                labelText: 'Kategori (misal: Pantai, Gunung)',
               ),
-              const SizedBox(height: 16),
-              // Text Field Wajib: Kategori
-              TextFormField(
-                controller: _categoryController,
-                decoration: const InputDecoration(
-                  labelText: 'Kategori (misal: Pantai, Gunung)',
-                ),
-              ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 24),
 
-              // --- PENGGUNAAN DATE/TIME PICKER WAJIB ---
-              const Text(
-                'Tanggal Kunjungan:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              ListTile(
-                leading: const Icon(Icons.calendar_today),
-                title: Text(selectedDateDisplay),
-                trailing: const Icon(Icons.edit),
-                onTap: _pickDateAndTime, // Panggil DatePicker & TimePicker
-              ),
-              const SizedBox(height: 24),
+            // --- PENGGUNAAN DATE/TIME PICKER WAJIB ---
+            const Text(
+              'Tanggal Kunjungan:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: Text(selectedDateDisplay),
+              trailing: const Icon(Icons.edit),
+              onTap: _pickDateAndTime, // Panggil DatePicker & TimePicker
+            ),
+            const SizedBox(height: 24),
 
-              // --- PENGGUNAAN LOKASI WAJIB ---
-              const Text(
-                'Lokasi GPS:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+            // --- PENGGUNAAN LOKASI WAJIB ---
+            const Text(
+              'Lokasi GPS:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else
+              Text(
+                'Lat: ${_latitude?.toStringAsFixed(6) ?? 'N/A'}, Lon: ${_longitude?.toStringAsFixed(6) ?? 'N/A'}',
               ),
-              const SizedBox(height: 8),
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else
-                Text(
-                  'Lat: ${_latitude?.toStringAsFixed(6) ?? 'N/A'}, Lon: ${_longitude?.toStringAsFixed(6) ?? 'N/A'}',
-                ),
 
-              const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-              // Tombol Ambil Lokasi
-              ElevatedButton.icon(
-                onPressed: _getCurrentLocation,
-                icon: const Icon(Icons.location_on),
-                label: const Text('Ambil Lokasi Saat Ini (GPS)'),
-              ),
-              const SizedBox(height: 40),
-            ],
-          ),
+            // Tombol Ambil Lokasi
+            ElevatedButton.icon(
+              onPressed: _getCurrentLocation,
+              icon: const Icon(Icons.location_on),
+              label: const Text('Ambil Lokasi Saat Ini (GPS)'),
+            ),
+            const SizedBox(height: 20),
+
+            // Tombol Simpan
+            ElevatedButton.icon(
+              onPressed: _saveDestination,
+              icon: const Icon(Icons.save),
+              label: const Text('Simpan Destinasi'),
+            ),
+            const SizedBox(height: 40),
+          ],
         ),
       ),
     );

@@ -174,61 +174,47 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Hapus Scaffold, gunakan Column untuk menampung AppBar dan Konten
-    return Column(
-      children: [
-        AppBar(
-          title: const Text('Destinasi Wisata Lokal'),
-          backgroundColor: Colors.teal,
-          automaticallyImplyLeading: false, // Penting karena ini root screen
-        ),
+    return Consumer<DestinationProvider>(
+      builder: (context, provider, child) {
+        final destinationList = provider.destinations;
 
-        // Expanded memastikan GridView mengambil sisa ruang yang tersedia
-        Expanded(
-          child: Consumer<DestinationProvider>(
-            builder: (context, provider, child) {
-              final destinationList = provider.destinations;
+        if (destinationList.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Text(
+                'Aplikasi siap digunakan! Tambahkan destinasi pertama Anda.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            ),
+          );
+        }
 
-              if (destinationList.isEmpty) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Text(
-                      'Aplikasi siap digunakan! Tambahkan destinasi pertama Anda.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  ),
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: StaggeredGrid.count(
+            crossAxisCount: 2,
+            mainAxisSpacing: 8.0,
+            crossAxisSpacing: 8.0,
+            children: [
+              // Map Card
+              StaggeredGridTile.count(
+                crossAxisCellCount: 2,
+                mainAxisCellCount: 1.5,
+                child: _buildMapCard(context),
+              ),
+              // Destinasi Cards
+              ...destinationList.map((destination) {
+                return StaggeredGridTile.fit(
+                  crossAxisCellCount: 1,
+                  child: _buildDestinationCard(context, destination),
                 );
-              }
-
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: StaggeredGrid.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 8.0,
-                  crossAxisSpacing: 8.0,
-                  children: [
-                    // Map Card
-                    StaggeredGridTile.count(
-                      crossAxisCellCount: 2,
-                      mainAxisCellCount: 1.5,
-                      child: _buildMapCard(context),
-                    ),
-                    // Destinasi Cards
-                    ...destinationList.map((destination) {
-                      return StaggeredGridTile.fit(
-                        crossAxisCellCount: 1,
-                        child: _buildDestinationCard(context, destination),
-                      );
-                    }).toList(),
-                  ],
-                ),
-              );
-            },
+              }).toList(),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
