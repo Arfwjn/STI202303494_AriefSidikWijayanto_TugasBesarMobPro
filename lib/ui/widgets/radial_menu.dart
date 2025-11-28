@@ -1,5 +1,6 @@
 // lib/ui/widgets/radial_menu.dart
 
+import '../../../../main.dart'; // Wajib: Akses navigatorKey
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math';
@@ -18,6 +19,7 @@ class RadialMenu extends StatefulWidget {
 
 class _RadialMenuState extends State<RadialMenu>
     with SingleTickerProviderStateMixin {
+  // Deklarasi State yang benar
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _rotationAnimation;
@@ -47,55 +49,7 @@ class _RadialMenuState extends State<RadialMenu>
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.bottomCenter,
-      children: [
-        // Background overlay when menu is open
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return IgnorePointer(
-              ignoring: !_controller.isCompleted,
-              child: AnimatedOpacity(
-                duration: AppAnimations.fast,
-                opacity: _controller.value * 0.3,
-                child: Container(color: Colors.black),
-              ),
-            );
-          },
-        ),
-
-        // Menu Buttons
-        _buildMenuButton(
-          angle: 3 * pi / 4,
-          icon: Icons.home_rounded,
-          label: 'Home',
-          routeName: HomeScreen.routeName,
-          color: AppTheme.primaryBlue,
-        ),
-        _buildMenuButton(
-          angle: pi / 2,
-          icon: Icons.add_location_alt_rounded,
-          label: 'Tambah',
-          routeName: AddEditScreen.routeName,
-          color: AppTheme.accentOrange,
-        ),
-        _buildMenuButton(
-          angle: pi / 4,
-          icon: Icons.map_rounded,
-          label: 'Peta',
-          routeName: MapScreen.routeName,
-          color: AppTheme.secondaryPurple,
-        ),
-
-        // Center FAB
-        _buildCenterButton(),
-      ],
-    );
-  }
-
+  // Fungsi yang dipindahkan ke dalam State Class (Fix _controller error)
   Widget _buildMenuButton({
     required double angle,
     required IconData icon,
@@ -104,6 +58,7 @@ class _RadialMenuState extends State<RadialMenu>
     required Color color,
   }) {
     const double radius = 110;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -120,29 +75,37 @@ class _RadialMenuState extends State<RadialMenu>
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    Navigator.of(context).pushNamed(routeName);
+
+                    // LOGIKA NAVIGASI SINKRON ULTIMATIF:
+                    // 1. Eksekusi navigasi secara instan menggunakan GlobalKey
+                    if (navigatorKey.currentState != null) {
+                      navigatorKey.currentState!.pushReplacementNamed(
+                        routeName,
+                      );
+                    }
+
+                    // 2. Matikan controller secara independen (animasi berjalan saat layar berganti)
                     _controller.reverse();
                   },
                   child: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [color, color.withOpacity(0.8)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withOpacity(0.4),
-                            blurRadius: 15,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [color, color.withOpacity(0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      child: Icon(icon, color: Colors.white, size: 28),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withOpacity(0.4),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
+                    child: Icon(icon, color: Colors.white, size: 28),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -226,6 +189,59 @@ class _RadialMenuState extends State<RadialMenu>
           );
         },
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const double angleMap = pi / 4;
+    const double angleAdd = pi / 2;
+    const double angleHome = 3 * pi / 4;
+
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: <Widget>[
+        // Background overlay (Menggunakan Opacity saja untuk menghindari bug AnimatedOpacity yang kompleks)
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return IgnorePointer(
+              ignoring: !_controller.isCompleted,
+              child: Opacity(
+                // Mengganti AnimatedOpacity
+                opacity: _controller.value * 0.3,
+                child: Container(color: Colors.black),
+              ),
+            );
+          },
+        ),
+
+        // Menu Buttons
+        _buildMenuButton(
+          angle: angleMap,
+          icon: Icons.map_rounded,
+          label: 'Peta',
+          routeName: MapScreen.routeName,
+          color: AppTheme.secondaryPurple,
+        ),
+        _buildMenuButton(
+          angle: angleAdd,
+          icon: Icons.add_location_alt_rounded,
+          label: 'Tambah',
+          routeName: AddEditScreen.routeName,
+          color: AppTheme.accentOrange,
+        ),
+        _buildMenuButton(
+          angle: angleHome,
+          icon: Icons.home_rounded,
+          label: 'Beranda',
+          routeName: HomeScreen.routeName,
+          color: AppTheme.primaryBlue,
+        ),
+
+        // Center FAB
+        _buildCenterButton(),
+      ],
     );
   }
 }

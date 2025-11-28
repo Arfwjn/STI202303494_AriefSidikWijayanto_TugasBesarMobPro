@@ -84,58 +84,51 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Peta Global Destinasi'),
-        backgroundColor: Colors.teal,
-      ),
-      body: Consumer<DestinationProvider>(
-        builder: (context, provider, child) {
-          final destinationList = provider.destinations;
+    return Consumer<DestinationProvider>(
+      builder: (context, provider, child) {
+        final destinationList = provider.destinations;
 
-          // 1. Siapkan Markers Wajib
-          final Set<Marker> markers = destinationList.map((dest) {
-            return Marker(
-              markerId: MarkerId(dest.id.toString()),
-              position: LatLng(dest.latitude, dest.longitude),
-              infoWindow: InfoWindow(title: dest.name, snippet: dest.category),
-              // Gunakan icon kustom yang sudah dimuat
-              icon: customIcon,
-            );
-          }).toSet();
-
-          // Lokasi awal (Jika kosong, gunakan Jakarta, jika ada, gunakan yang pertama)
-          final initialPosition = destinationList.isNotEmpty
-              ? LatLng(
-                  destinationList.first.latitude,
-                  destinationList.first.longitude,
-                )
-              : const LatLng(-6.2088, 106.8456);
-
-          // 2. Tampilkan Google Map Wajib
-          return GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: initialPosition,
-              zoom: destinationList.isEmpty
-                  ? 8.0
-                  : 12.0, // Zoom lebih dekat jika ada data
-            ),
-            markers: markers,
-            // --- Interaktivitas Penuh Wajib ---
-            zoomControlsEnabled: true,
-            scrollGesturesEnabled: true,
-            rotateGesturesEnabled: true,
-
-            // Dijalankan saat peta pertama kali dibuat
-            onMapCreated: (controller) {
-              mapController = controller;
-              // Panggil fungsi untuk menyesuaikan tampilan ke batas semua marker
-              _setCameraToFitMarkers(destinationList);
-            },
+        // 1. Siapkan Markers Wajib
+        final Set<Marker> markers = destinationList.map((dest) {
+          return Marker(
+            markerId: MarkerId(dest.id.toString()),
+            position: LatLng(dest.latitude, dest.longitude),
+            infoWindow: InfoWindow(title: dest.name, snippet: dest.category),
+            // Gunakan icon kustom yang sudah dimuat
+            icon: customIcon,
           );
-        },
-      ),
+        }).toSet();
+
+        // Lokasi awal (Jika kosong, gunakan Jakarta, jika ada, gunakan yang pertama)
+        final initialPosition = destinationList.isNotEmpty
+            ? LatLng(
+                destinationList.first.latitude,
+                destinationList.first.longitude,
+              )
+            : const LatLng(-6.2088, 106.8456);
+
+        // 2. Tampilkan Google Map Wajib
+        return GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: initialPosition,
+            zoom: destinationList.isEmpty
+                ? 8.0
+                : 12.0, // Zoom lebih dekat jika ada data
+          ),
+          markers: markers,
+          // --- Interaktivitas Penuh Wajib ---
+          zoomControlsEnabled: true,
+          scrollGesturesEnabled: true,
+          rotateGesturesEnabled: true,
+
+          // Dijalankan saat peta pertama kali dibuat
+          onMapCreated: (controller) {
+            mapController = controller;
+            // Panggil fungsi untuk menyesuaikan tampilan ke batas semua marker
+            _setCameraToFitMarkers(destinationList);
+          },
+        );
+      },
     );
   }
 }
-// ...
