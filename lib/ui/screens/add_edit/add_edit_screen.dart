@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart'; // Wajib untuk GPS
 import 'package:intl/intl.dart'; // Wajib untuk format tanggal/waktu
+import '../../../core/theme.dart';
 import '../../../data/models/destination.dart';
 import '../../../providers/destination_provider.dart';
 
@@ -193,86 +194,227 @@ class _AddEditScreenState extends State<AddEditScreen> {
         ? 'Pilih Tanggal & Waktu'
         : DateFormat('dd/MM/yyyy HH:mm').format(_selectedDateTime!);
 
-    return SingleChildScrollView(
-      // Widget wajib: SingleChildScrollView
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // Text Field Wajib: Nama Destinasi
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nama Destinasi'),
-              validator: (value) => value!.isEmpty ? 'Nama wajib diisi.' : null,
-            ),
-            const SizedBox(height: 16),
-            // Text Field Wajib: Deskripsi
-            TextFormField(
-              controller: _descController,
-              decoration: const InputDecoration(
-                labelText: 'Deskripsi / Catatan',
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            // Text Field Wajib: Kategori
-            TextFormField(
-              controller: _categoryController,
-              decoration: const InputDecoration(
-                labelText: 'Kategori (misal: Pantai, Gunung)',
-              ),
-            ),
-            const SizedBox(height: 24),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.destinationToEdit == null
+              ? 'Tambah Destinasi'
+              : 'Edit Destinasi',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: AppTheme.textDark,
+      ),
+      body: Container(
+        color: AppTheme.backgroundLight,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                // Form Fields Section
+                Container(
+                  decoration: AppDecorations.gradientCard(),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Text Field Wajib: Nama Destinasi
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Destinasi',
+                          prefixIcon: Icon(
+                            Icons.place,
+                            color: AppTheme.primaryBlue,
+                          ),
+                        ),
+                        validator: (value) =>
+                            value!.isEmpty ? 'Nama wajib diisi.' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      // Text Field Wajib: Deskripsi
+                      TextFormField(
+                        controller: _descController,
+                        decoration: const InputDecoration(
+                          labelText: 'Deskripsi / Catatan',
+                          prefixIcon: Icon(
+                            Icons.description,
+                            color: AppTheme.primaryBlue,
+                          ),
+                        ),
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 16),
+                      // Text Field Wajib: Kategori
+                      TextFormField(
+                        controller: _categoryController,
+                        decoration: const InputDecoration(
+                          labelText: 'Kategori (misal: Pantai, Gunung)',
+                          prefixIcon: Icon(
+                            Icons.category,
+                            color: AppTheme.primaryBlue,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
 
-            // --- PENGGUNAAN DATE/TIME PICKER WAJIB ---
-            const Text(
-              'Tanggal Kunjungan:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: Text(selectedDateDisplay),
-              trailing: const Icon(Icons.edit),
-              onTap: _pickDateAndTime, // Panggil DatePicker & TimePicker
-            ),
-            const SizedBox(height: 24),
+                // Date Picker Section
+                Container(
+                  decoration: AppDecorations.gradientCard(),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tanggal Kunjungan:',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textDark,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: _pickDateAndTime,
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.cardWhite,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AppTheme.textGrey.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                color: AppTheme.primaryBlue,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  selectedDateDisplay,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                ),
+                              ),
+                              Icon(Icons.edit, color: AppTheme.textGrey),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
 
-            // --- PENGGUNAAN LOKASI WAJIB ---
-            const Text(
-              'Lokasi GPS:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator())
-            else
-              Text(
-                'Lat: ${_latitude?.toStringAsFixed(6) ?? 'N/A'}, Lon: ${_longitude?.toStringAsFixed(6) ?? 'N/A'}',
-              ),
+                // Location Section
+                Container(
+                  decoration: AppDecorations.gradientCard(),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Lokasi GPS:',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textDark,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_isLoading)
+                        const Center(child: CircularProgressIndicator())
+                      else
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.cardWhite,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppTheme.textGrey.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                color: AppTheme.primaryBlue,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Lat: ${_latitude?.toStringAsFixed(6) ?? 'N/A'}, Lon: ${_longitude?.toStringAsFixed(6) ?? 'N/A'}',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 16),
 
-            const SizedBox(height: 16),
+                      // Tombol Ambil Lokasi
+                      GestureDetector(
+                        onTap: _getCurrentLocation,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.primaryGradient,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryBlue.withOpacity(0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.location_on, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text(
+                                'Ambil Lokasi Saat Ini (GPS)',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
 
-            // Tombol Ambil Lokasi
-            ElevatedButton.icon(
-              onPressed: _getCurrentLocation,
-              icon: const Icon(Icons.location_on),
-              label: const Text('Ambil Lokasi Saat Ini (GPS)'),
+                // Tombol Simpan
+                ElevatedButton.icon(
+                  onPressed: _saveDestination,
+                  icon: const Icon(Icons.save),
+                  label: const Text('Simpan Destinasi'),
+                ),
+                const SizedBox(height: 40),
+              ],
             ),
-            const SizedBox(height: 20),
-
-            // Tombol Simpan
-            ElevatedButton.icon(
-              onPressed: _saveDestination,
-              icon: const Icon(Icons.save),
-              label: const Text('Simpan Destinasi'),
-            ),
-            const SizedBox(height: 40),
-          ],
+          ),
         ),
       ),
     );
   }
 }
-// ...

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../../core/theme.dart';
 import '../../../data/models/destination.dart';
 import '../../../providers/destination_provider.dart';
 

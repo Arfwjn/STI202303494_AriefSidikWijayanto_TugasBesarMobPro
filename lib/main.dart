@@ -77,10 +77,33 @@ class MyApp extends StatelessWidget {
             // Kita membungkus HomeScreen dengan Scaffold agar RadialMenu bisa terlihat
             return MaterialPageRoute(
               builder: (context) => RootScaffoldWrapper(
-                appBar: AppBar(
-                  title: const Text('Destinasi Wisata Lokal'),
-                  backgroundColor: Colors.teal,
-                  automaticallyImplyLeading: false,
+                appBar: PreferredSize(
+                  preferredSize: const Size.fromHeight(60),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryBlue.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: AppBar(
+                      title: const Text(
+                        'Destinasi Wisata Lokal',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      automaticallyImplyLeading: false,
+                    ),
+                  ),
                 ),
                 child: const HomeScreen(),
               ),
@@ -88,9 +111,32 @@ class MyApp extends StatelessWidget {
           case MapScreen.routeName:
             return MaterialPageRoute(
               builder: (context) => RootScaffoldWrapper(
-                appBar: AppBar(
-                  title: const Text('Peta Global Destinasi'),
-                  backgroundColor: Colors.teal,
+                appBar: PreferredSize(
+                  preferredSize: const Size.fromHeight(60),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryBlue.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: AppBar(
+                      title: const Text(
+                        'Peta Global Destinasi',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                    ),
+                  ),
                 ),
                 child: const MapScreen(),
               ),
@@ -100,7 +146,33 @@ class MyApp extends StatelessWidget {
             final destinationToEdit = args is Destination ? args : null;
             return MaterialPageRoute(
               builder: (context) => RootScaffoldWrapper(
-                appBar: AppBar(title: const Text('Tambah Destinasi Baru')),
+                appBar: PreferredSize(
+                  preferredSize: const Size.fromHeight(60),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryBlue.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: AppBar(
+                      title: const Text(
+                        'Tambah Destinasi Baru',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                    ),
+                  ),
+                ),
                 child: AddEditScreen(destinationToEdit: destinationToEdit),
               ),
             );
