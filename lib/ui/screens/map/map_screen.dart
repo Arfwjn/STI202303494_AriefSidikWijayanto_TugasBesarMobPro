@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../../../core/theme.dart';
 import '../../../data/models/destination.dart';
 import '../../../providers/destination_provider.dart';
 
@@ -73,14 +72,26 @@ class _MapScreenState extends State<MapScreen> {
 
   // Metode untuk memuat gambar kustom sebagai Marker Icon
   void _loadCustomMarker() async {
-    // Ukuran yang sesuai
-    final icon = await BitmapDescriptor.fromAssetImage(
-      const ImageConfiguration(size: Size(48, 48)),
-      'assets/images/custom_pin.png', // Ganti dengan path aset Anda
-    );
-    setState(() {
-      customIcon = icon;
-    });
+    try {
+      // Ukuran yang sesuai
+      final icon = await BitmapDescriptor.fromAssetImage(
+        const ImageConfiguration(size: Size(48, 48)),
+        'assets/images/custom_pin.png', // Ganti dengan path aset Anda
+      );
+      if (mounted) {
+        setState(() {
+          customIcon = icon;
+        });
+      }
+    } catch (e) {
+      // If loading fails, use default marker and log error
+      debugPrint('Error loading custom marker: $e');
+      if (mounted) {
+        setState(() {
+          customIcon = BitmapDescriptor.defaultMarker;
+        });
+      }
+    }
   }
 
   @override
@@ -108,25 +119,60 @@ class _MapScreenState extends State<MapScreen> {
               )
             : const LatLng(-6.2088, 106.8456);
 
-        // 2. Tampilkan Google Map Wajib
-        return GoogleMap(
-          initialCameraPosition: CameraPosition(
-            target: initialPosition,
-            zoom: destinationList.isEmpty
-                ? 8.0
-                : 12.0, // Zoom lebih dekat jika ada data
-          ),
-          markers: markers,
-          // --- Interaktivitas Penuh Wajib ---
-          zoomControlsEnabled: true,
-          scrollGesturesEnabled: true,
-          rotateGesturesEnabled: true,
+        // 2. Tampilkan Google Map with error handling
+        return FutureBuilder(
+          future: Future.delayed(Duration.zero), // Allow map to load
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else {
+              try {
+                return GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: initialPosition,
+                    zoom: destinationList.isEmpty
+                        ? 8.0
+                        : 12.0, // Zoom lebih dekat jika ada data
+                  ),
+                  markers: markers,
+                  // --- Interaktivitas Penuh Wajib ---
+                  zoomControlsEnabled: true,
+                  scrollGesturesEnabled: true,
+                  rotateGesturesEnabled: true,
 
-          // Dijalankan saat peta pertama kali dibuat
-          onMapCreated: (controller) {
-            mapController = controller;
-            // Panggil fungsi untuk menyesuaikan tampilan ke batas semua marker
-            _setCameraToFitMarkers(destinationList);
+                  // Dijalankan saat peta pertama kali dibuat
+                  onMapCreated: (controller) {
+                    mapController = controller;
+                    // Panggil fungsi untuk menyesuaikan tampilan ke batas semua marker
+                    _setCameraToFitMarkers(destinationList);
+                  },
+                );
+              } catch (e) {
+                // If map fails to load, show error message
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.map, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Failed to load map. Please check your internet connection and API key.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Try to reload the map
+                          setState(() {});
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            }
           },
         );
       },

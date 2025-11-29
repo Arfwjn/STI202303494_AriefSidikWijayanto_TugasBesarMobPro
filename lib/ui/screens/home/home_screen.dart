@@ -160,19 +160,34 @@ Widget _buildMapCard(BuildContext context) {
           borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
-              // Widget Google Map Wajib
-              GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: initialPosition,
-                  zoom: 8,
-                ),
-                markers: markers,
-                // Batasi interaksi di Kartu Home Screen
-                zoomControlsEnabled: false,
-                scrollGesturesEnabled: false,
-                // Navigasi ke MapScreen penuh
-                onTap: (_) {
-                  Navigator.of(context).pushNamed(MapScreen.routeName);
+              // Widget Google Map with error handling
+              FutureBuilder(
+                future: Future.delayed(Duration.zero),
+                builder: (context, snapshot) {
+                  try {
+                    return GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: initialPosition,
+                        zoom: 8,
+                      ),
+                      markers: markers,
+                      // Batasi interaksi di Kartu Home Screen
+                      zoomControlsEnabled: false,
+                      scrollGesturesEnabled: false,
+                      // Navigasi ke MapScreen penuh
+                      onTap: (_) {
+                        Navigator.of(context).pushNamed(MapScreen.routeName);
+                      },
+                    );
+                  } catch (e) {
+                    // If map fails, show placeholder
+                    return Container(
+                      color: Colors.grey[300],
+                      child: const Center(
+                        child: Icon(Icons.map, size: 48, color: Colors.grey),
+                      ),
+                    );
+                  }
                 },
               ),
               // Overlay Interaktif
@@ -275,7 +290,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisCellCount: 1,
                   child: _buildDestinationCard(context, destination),
                 );
-              }).toList(),
+              }),
             ],
           ),
         );

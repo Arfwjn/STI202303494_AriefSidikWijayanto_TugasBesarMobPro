@@ -15,29 +15,42 @@ class DestinationProvider extends ChangeNotifier {
   // 2. Fungsi Inisialisasi/Ambil Data Awal
   // Dipanggil saat aplikasi dimuat pertama kali
   Future<void> loadDestinations() async {
-    _destinations = await _repository.getDestinations();
-    notifyListeners(); // Memberi tahu UI untuk di-rebuild
+    try {
+      _destinations = await _repository.getDestinations();
+      notifyListeners(); // Memberi tahu UI untuk di-rebuild
+    } catch (e) {
+      // Log error but don't crash the app
+      debugPrint('Failed to load destinations: $e');
+      // Keep empty list if loading fails
+      _destinations = [];
+      notifyListeners();
+    }
   }
 
   // 3. Fungsi Tambah Data
   Future<void> addDestination(Destination destination) async {
-    // Insert ke DB
-    final newId = await _repository.insertDestination(destination);
+    try {
+      // Insert ke DB
+      final newId = await _repository.insertDestination(destination);
 
-    // Buat objek baru dengan ID dari DB
-    final newDestinationWithId = Destination(
-      id: newId,
-      name: destination.name,
-      description: destination.description,
-      latitude: destination.latitude,
-      longitude: destination.longitude,
-      dateAdded: destination.dateAdded,
-      category: destination.category,
-    );
+      // Buat objek baru dengan ID dari DB
+      final newDestinationWithId = Destination(
+        id: newId,
+        name: destination.name,
+        description: destination.description,
+        latitude: destination.latitude,
+        longitude: destination.longitude,
+        dateAdded: destination.dateAdded,
+        category: destination.category,
+      );
 
-    // Update state
-    _destinations.add(newDestinationWithId);
-    notifyListeners(); // Memberi tahu UI
+      // Update state
+      _destinations.add(newDestinationWithId);
+      notifyListeners(); // Memberi tahu UI
+    } catch (e) {
+      // Re-throw to let the UI handle it
+      throw Exception('Failed to add destination: $e');
+    }
   }
 
   // 4. Fungsi Hapus Data

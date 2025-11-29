@@ -166,24 +166,33 @@ class _AddEditScreenState extends State<AddEditScreen> {
           : _categoryController.text,
     );
 
-    if (isUpdating) {
-      // Panggil fungsi UPDATE di Provider
-      await context.read<DestinationProvider>().updateDestination(destination);
-    } else {
-      // Panggil fungsi CREATE di Provider
-      await context.read<DestinationProvider>().addDestination(destination);
+    try {
+      if (isUpdating) {
+        // Panggil fungsi UPDATE di Provider
+        await context.read<DestinationProvider>().updateDestination(
+          destination,
+        );
+      } else {
+        // Panggil fungsi CREATE di Provider
+        await context.read<DestinationProvider>().addDestination(destination);
+      }
+
+      // SnackBar Wajib (Feedback setelah simpan)
+      final feedbackMessage = isUpdating
+          ? 'Destinasi berhasil diubah!'
+          : 'Destinasi berhasil disimpan!';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(feedbackMessage)));
+
+      // Kembali ke Home Screen
+      Navigator.of(context).pop();
+    } catch (e) {
+      // Handle error and show message instead of crashing
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error saving destination: $e')));
     }
-
-    // SnackBar Wajib (Feedback setelah simpan)
-    final feedbackMessage = isUpdating
-        ? 'Destinasi berhasil diubah!'
-        : 'Destinasi berhasil disimpan!';
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(feedbackMessage)));
-
-    // Kembali ke Home Screen
-    Navigator.of(context).pop();
   }
 
   // (Lanjutan dari _AddEditScreenState)
@@ -407,7 +416,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
                 ElevatedButton.icon(
                   onPressed: _saveDestination,
                   icon: const Icon(Icons.save),
-                  label: const Text('Simpan Destinasi'),
+                  label: const Text('Simpan'),
                 ),
                 const SizedBox(height: 40),
               ],

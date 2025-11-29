@@ -20,7 +20,11 @@ void main() {
     ChangeNotifierProvider(
       create: (context) {
         final provider = DestinationProvider();
-        provider.loadDestinations();
+        // Add error handling for loadDestinations
+        provider.loadDestinations().catchError((error) {
+          // Log the error but don't crash the app
+          debugPrint('Error loading destinations: $error');
+        });
         return provider;
       },
       child: const MyApp(),
