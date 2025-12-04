@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/app_export.dart';
+import '../../services/database_helper.dart';
 import '../../widgets/custom_bottom_bar.dart';
 import '../../widgets/custom_icon_widget.dart';
 import './widgets/destination_card_widget.dart';
@@ -19,69 +20,37 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _searchQuery = '';
   bool _isRefreshing = false;
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _destinations = [];
 
-  final List<Map<String, dynamic>> _destinations = [
-    {
-      "id": 1,
-      "name": "Golden Gate Bridge",
-      "description":
-          "Iconic suspension bridge spanning the Golden Gate strait, offering breathtaking views of San Francisco Bay.",
-      "openingHours": "24/7",
-      "latitude": "37.8199",
-      "longitude": "-122.4783",
-      "photo": "https://images.unsplash.com/photo-1727402041671-3ca1420e35c4",
-      "semanticLabel":
-          "Aerial view of the iconic red-orange Golden Gate Bridge spanning across blue waters with San Francisco cityscape in the background under clear sky"
-    },
-    {
-      "id": 2,
-      "name": "Central Park",
-      "description":
-          "Urban park in Manhattan, New York City, featuring lakes, theaters, ice rinks, fountains, tennis courts, playgrounds, and bridle paths.",
-      "openingHours": "6:00 AM - 1:00 AM",
-      "latitude": "40.7829",
-      "longitude": "-73.9654",
-      "photo": "https://images.unsplash.com/photo-1629598054447-db09bfc4da45",
-      "semanticLabel":
-          "Scenic view of Central Park with lush green trees, walking paths, and people enjoying outdoor activities with Manhattan skyscrapers visible in the distance"
-    },
-    {
-      "id": 3,
-      "name": "Grand Canyon",
-      "description":
-          "Steep-sided canyon carved by the Colorado River in Arizona, known for its visually overwhelming size and intricate landscape.",
-      "openingHours": "Open 24 hours",
-      "latitude": "36.1069",
-      "longitude": "-112.1129",
-      "photo": "https://images.unsplash.com/photo-1692235321379-0c63a8cd90cb",
-      "semanticLabel":
-          "Panoramic view of the Grand Canyon showing layered red and orange rock formations with deep valleys and the Colorado River visible below under blue sky"
-    },
-    {
-      "id": 4,
-      "name": "Statue of Liberty",
-      "description":
-          "Colossal neoclassical sculpture on Liberty Island in New York Harbor, a symbol of freedom and democracy.",
-      "openingHours": "9:00 AM - 5:00 PM",
-      "latitude": "40.6892",
-      "longitude": "-74.0445",
-      "photo": "https://images.unsplash.com/photo-1511741390939-dcb97d683e8f",
-      "semanticLabel":
-          "The Statue of Liberty standing tall on Liberty Island with her torch raised high, copper-green patina visible against blue sky and water"
-    },
-    {
-      "id": 5,
-      "name": "Yellowstone National Park",
-      "description":
-          "America's first national park, famous for its geothermal features, wildlife, and stunning natural beauty.",
-      "openingHours": "Open year-round",
-      "latitude": "44.4280",
-      "longitude": "-110.5885",
-      "photo": "https://images.unsplash.com/photo-1727467044803-ef7f6ef8c0a3",
-      "semanticLabel":
-          "Colorful Grand Prismatic Spring in Yellowstone with vibrant blue center surrounded by orange and yellow bacterial mats, steam rising from hot water"
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadDestinations();
+  }
+
+  /// Load destinations from database
+  Future<void> _loadDestinations() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final destinations = await DatabaseHelper.instance.getAllDestinations();
+      setState(() {
+        _destinations = destinations;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading destinations: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
 
   List<Map<String, dynamic>> get _filteredDestinations {
     if (_searchQuery.isEmpty) {
@@ -130,33 +99,40 @@ class _HomeScreenState extends State<HomeScreen> {
               initialQuery: _searchQuery,
             ),
             Expanded(
-              child: _filteredDestinations.isEmpty
-                  ? _searchQuery.isEmpty
-                      ? EmptyStateWidget(
-                          onAddDestination: _navigateToAddDestination,
-                        )
-                      : _buildNoResultsWidget(theme)
-                  : RefreshIndicator(
-                      onRefresh: _handleRefresh,
-                      color: theme.colorScheme.primary,
-                      child: ListView.builder(
-                        itemCount: _filteredDestinations.length,
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemBuilder: (context, index) {
-                          final destination = _filteredDestinations[index];
-                          return DestinationCardWidget(
-                            destination: destination,
-                            onTap: () =>
-                                _navigateToDestinationDetail(destination),
-                            onEdit: () =>
-                                _navigateToEditDestination(destination),
-                            onDelete: () =>
-                                _showDeleteConfirmation(destination),
-                            onViewOnMap: () => _navigateToMapView(destination),
-                          );
-                        },
+              child: _isLoading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: theme.colorScheme.primary,
                       ),
-                    ),
+                    )
+                  : _filteredDestinations.isEmpty
+                      ? _searchQuery.isEmpty
+                          ? EmptyStateWidget(
+                              onAddDestination: _navigateToAddDestination,
+                            )
+                          : _buildNoResultsWidget(theme)
+                      : RefreshIndicator(
+                          onRefresh: _handleRefresh,
+                          color: theme.colorScheme.primary,
+                          child: ListView.builder(
+                            itemCount: _filteredDestinations.length,
+                            padding: const EdgeInsets.only(bottom: 80),
+                            itemBuilder: (context, index) {
+                              final destination = _filteredDestinations[index];
+                              return DestinationCardWidget(
+                                destination: destination,
+                                onTap: () =>
+                                    _navigateToDestinationDetail(destination),
+                                onEdit: () =>
+                                    _navigateToEditDestination(destination),
+                                onDelete: () =>
+                                    _showDeleteConfirmation(destination),
+                                onViewOnMap: () =>
+                                    _navigateToMapView(destination),
+                              );
+                            },
+                          ),
+                        ),
             ),
           ],
         ),
@@ -221,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _isRefreshing = true;
     });
 
-    await Future.delayed(const Duration(seconds: 1));
+    await _loadDestinations();
 
     setState(() {
       _isRefreshing = false;
@@ -295,12 +271,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   size: 24,
                 ),
                 title: Text(
-                  'Sort by Opening Hours',
+                  'Sort by Date Added',
                   style: theme.textTheme.bodyLarge,
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _sortByOpeningHours();
+                  _sortByDate();
                 },
               ),
               ListTile(
@@ -310,12 +286,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   size: 24,
                 ),
                 title: Text(
-                  'Sort by Location',
+                  'View on Map',
                   style: theme.textTheme.bodyLarge,
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _sortByLocation();
+                  Navigator.pushNamed(context, '/map-view-screen');
                 },
               ),
               const SizedBox(height: 8),
@@ -339,23 +315,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _sortByOpeningHours() {
+  void _sortByDate() {
     setState(() {
-      _destinations.sort((a, b) =>
-          (a['openingHours'] as String).compareTo(b['openingHours'] as String));
+      _destinations.sort((a, b) {
+        final aDate = DateTime.parse(a['created_at'] as String);
+        final bDate = DateTime.parse(b['created_at'] as String);
+        return bDate.compareTo(aDate); // Newest first
+      });
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Sorted by opening hours'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _sortByLocation() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Location-based sorting available in Map View'),
+        content: Text('Sorted by date added'),
         duration: Duration(seconds: 2),
       ),
     );
@@ -367,10 +337,8 @@ class _HomeScreenState extends State<HomeScreen> {
         await Navigator.pushNamed(context, '/add-destination-screen');
 
     if (result == true && mounted) {
-      setState(() {
-        // Refresh atau reload data destinasi di sini
-        // Untuk saat ini, hanya trigger rebuild
-      });
+      // Reload destinations after adding new one
+      await _loadDestinations();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -446,26 +414,33 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _deleteDestination(Map<String, dynamic> destination) {
+  Future<void> _deleteDestination(Map<String, dynamic> destination) async {
     HapticFeedback.mediumImpact();
-    setState(() {
-      _destinations.removeWhere((d) => d['id'] == destination['id']);
-    });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${destination['name']} deleted'),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () {
-            setState(() {
-              _destinations.add(destination);
-            });
-          },
-        ),
-      ),
-    );
+    try {
+      await DatabaseHelper.instance.deleteDestination(destination['id'] as int);
+
+      // Reload destinations
+      await _loadDestinations();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${destination['name']} deleted'),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete destination'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 }

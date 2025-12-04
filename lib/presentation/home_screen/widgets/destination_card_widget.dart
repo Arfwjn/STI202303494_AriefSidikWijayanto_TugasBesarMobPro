@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
@@ -66,17 +67,27 @@ class DestinationCardWidget extends StatelessWidget {
   }
 
   Widget _buildImageSection(ThemeData theme) {
+    final photoPath = destination['photo_path'] as String?;
+
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
       child: Stack(
         children: [
-          CustomImageWidget(
-            imageUrl: destination['photo'] as String,
-            width: double.infinity,
-            height: 200,
-            fit: BoxFit.cover,
-            semanticLabel: destination['semanticLabel'] as String,
-          ),
+          // Display image if available
+          if (photoPath != null && photoPath.isNotEmpty)
+            Image.file(
+              File(photoPath),
+              width: double.infinity,
+              height: 200,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildPlaceholderImage(theme);
+              },
+            )
+          else
+            _buildPlaceholderImage(theme),
+
+          // Opening hours badge
           Positioned(
             top: 12,
             right: 12,
@@ -96,13 +107,38 @@ class DestinationCardWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    destination['openingHours'] as String,
+                    destination['opening_hours'] as String? ?? 'N/A',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: Colors.white,
                     ),
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderImage(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      height: 200,
+      color: theme.colorScheme.primaryContainer,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CustomIconWidget(
+            iconName: 'image',
+            color: theme.colorScheme.onSurfaceVariant,
+            size: 48,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'No Image',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -272,7 +308,7 @@ ${destination['name']}
 
 ${destination['description']}
 
-Opening Hours: ${destination['openingHours']}
+Opening Hours: ${destination['opening_hours']}
 Location: ${destination['latitude']}, ${destination['longitude']}
 ''';
 
