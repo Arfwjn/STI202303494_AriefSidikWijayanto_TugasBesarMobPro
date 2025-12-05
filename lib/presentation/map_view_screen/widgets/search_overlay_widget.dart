@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../../services/database_helper.dart';
 import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
@@ -9,14 +9,15 @@ import '../../../widgets/custom_icon_widget.dart';
 class SearchOverlayWidget extends StatefulWidget {
   final String searchQuery;
   final Function(String) onSearchQueryChanged;
-  final Function(LatLng, String) onLocationSelected;
+  // Mengubah callback untuk mengembalikan seluruh objek tujuan
+  final Function(Map<String, dynamic>) onDestinationSelected;
   final VoidCallback onClose;
 
   const SearchOverlayWidget({
     super.key,
     required this.searchQuery,
     required this.onSearchQueryChanged,
-    required this.onLocationSelected,
+    required this.onDestinationSelected,
     required this.onClose,
   });
 
@@ -28,85 +29,76 @@ class _SearchOverlayWidgetState extends State<SearchOverlayWidget> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
-  // Mock saran pencarian
-  final List<Map<String, dynamic>> _mockSuggestions = [
-    {
-      "name": "Curug Jenggala",
-      "address":
-          "Jl. Pangeran Limboro, Dusun III Kalipagu, Ketenger, Kec. Baturaden, Kabupaten Banyumas, Jawa Tengah",
-      "latitude": -7.308877709465497,
-      "longitude": 109.20872405118497,
-    },
-    {
-      "name": "Menara Pandang Teratai",
-      "address":
-          "Jl. Bung Karno, Kalibener, Kedungwuluh, Kec. Purwokerto Tim., Kabupaten Banyumas, Jawa Tengah",
-      "latitude": -7.431312718223754,
-      "longitude": 109.23249445118637,
-    },
-    {
-      "name": "Alun-Alun Purwokerto",
-      "address":
-          "Komplek PJKA 386-388, JL. Jend. Sudirman, Purwokerto Lor, Purwokerto, Sokanegara, Kec. Purwokerto Tim., Kabupaten Banyumas, Jawa Tengah",
-      "latitude": -7.423757694467924,
-      "longitude": 109.23013411699363,
-    },
-    {
-      "name": "Taman Andhang Pangrenan",
-      "address":
-          "Jalan Gerilya Purwokerto Selatan, Jl. Prof. M Yamin I, Windusara, Karangklesem, Kec. Banyumas, Kabupaten Banyumas, Jawa Tengah",
-      "latitude": -7.439814441594049,
-      "longitude": 109.24371685036475,
-    },
-    {
-      "name": "STMIK Widya Utama Purwokerto",
-      "address":
-          "Jl. Sunan Kalijaga, Dusun III, Berkoh, Kec. Purwokerto Sel., Kabupaten Banyumas, Jawa Tengah",
-      "latitude": -7.439159591700715,
-      "longitude": 109.2662043242014,
-    },
-  ];
-
-  List<Map<String, dynamic>> _filteredSuggestions = [];
+  // Mengganti mock data dengan hasil pencarian database
+  List<Map<String, dynamic>> _searchResults = [];
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
     _searchController.text = widget.searchQuery;
-    _filteredSuggestions = _mockSuggestions;
+    _searchDatabase(widget.searchQuery);
+    _searchController.addListener(_onSearchQueryChanged);
     _searchFocusNode.requestFocus();
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchQueryChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
 
-  void _filterSuggestions(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredSuggestions = _mockSuggestions;
-      } else {
-        _filteredSuggestions = _mockSuggestions.where((suggestion) {
-          final name = (suggestion["name"] as String).toLowerCase();
-          final address = (suggestion["address"] as String).toLowerCase();
-          final searchLower = query.toLowerCase();
-          return name.contains(searchLower) || address.contains(searchLower);
-        }).toList();
-      }
-    });
-    widget.onSearchQueryChanged(query);
+  void _onSearchQueryChanged() {
+    // Panggil fungsi pencarian ke database setiap kali query berubah
+    _searchDatabase(_searchController.text);
+    widget.onSearchQueryChanged(_searchController.text);
   }
 
-  void _selectLocation(Map<String, dynamic> suggestion) {
+  Future<void> _searchDatabase(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final results = await DatabaseHelper.instance.searchDestinations(query);
+
+      if (mounted) {
+        setState(() {
+          _searchResults = results;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error searching destinations: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
+    }
+  }
+
+  void _selectLocation(Map<String, dynamic> destination) {
     HapticFeedback.lightImpact();
-    final location = LatLng(
-      suggestion["latitude"] as double,
-      suggestion["longitude"] as double,
-    );
-    widget.onLocationSelected(location, suggestion["name"] as String);
+    // Mengembalikan seluruh objek tujuan
+    widget.onDestinationSelected(destination);
   }
 
   @override
@@ -114,13 +106,19 @@ class _SearchOverlayWidgetState extends State<SearchOverlayWidget> {
     final theme = Theme.of(context);
 
     return Container(
-      color: theme.colorScheme.surface.withValues(alpha: 0.95),
+      color: theme.colorScheme.surface.withOpacity(0.95),
       child: SafeArea(
         child: Column(
           children: [
             _buildSearchBar(theme),
             Expanded(
-              child: _buildSuggestionsList(theme),
+              child: _isSearching
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: theme.colorScheme.primary,
+                      ),
+                    )
+                  : _buildSuggestionsList(theme),
             ),
           ],
         ),
@@ -157,7 +155,6 @@ class _SearchOverlayWidgetState extends State<SearchOverlayWidget> {
             child: TextField(
               controller: _searchController,
               focusNode: _searchFocusNode,
-              onChanged: _filterSuggestions,
               style: theme.textTheme.bodyMedium,
               decoration: InputDecoration(
                 hintText: 'Search for places...',
@@ -179,7 +176,7 @@ class _SearchOverlayWidgetState extends State<SearchOverlayWidget> {
                         ),
                         onPressed: () {
                           _searchController.clear();
-                          _filterSuggestions('');
+                          _searchDatabase('');
                         },
                       )
                     : null,
@@ -208,7 +205,7 @@ class _SearchOverlayWidgetState extends State<SearchOverlayWidget> {
   }
 
   Widget _buildSuggestionsList(ThemeData theme) {
-    if (_filteredSuggestions.isEmpty) {
+    if (_searchResults.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -239,13 +236,13 @@ class _SearchOverlayWidgetState extends State<SearchOverlayWidget> {
 
     return ListView.separated(
       padding: EdgeInsets.symmetric(vertical: 8),
-      itemCount: _filteredSuggestions.length,
+      itemCount: _searchResults.length,
       separatorBuilder: (context, index) => Divider(
         height: 1,
         indent: 72,
       ),
       itemBuilder: (context, index) {
-        final suggestion = _filteredSuggestions[index];
+        final suggestion = _searchResults[index];
         return _buildSuggestionItem(theme, suggestion);
       },
     );
@@ -291,7 +288,7 @@ class _SearchOverlayWidgetState extends State<SearchOverlayWidget> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      suggestion["address"] as String,
+                      suggestion["description"] as String,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

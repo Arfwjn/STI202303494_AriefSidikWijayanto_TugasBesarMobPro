@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -45,7 +46,7 @@ class DestinationListSheetWidget extends StatelessWidget {
                   style: theme.textTheme.titleLarge,
                 ),
                 Text(
-                  '${destinations.length} places',
+                  '${destinations.length} ${destinations.length == 1 ? "place" : "places"}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -54,21 +55,48 @@ class DestinationListSheetWidget extends StatelessWidget {
             ),
           ),
           Divider(height: 1),
-          Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              padding: EdgeInsets.symmetric(vertical: 8),
-              itemCount: destinations.length,
-              separatorBuilder: (context, index) => Divider(
-                height: 1,
-                indent: 88,
-              ),
-              itemBuilder: (context, index) {
-                final destination = destinations[index];
-                return _buildDestinationItem(context, theme, destination);
-              },
-            ),
-          ),
+          destinations.isEmpty
+              ? Padding(
+                  padding: EdgeInsets.symmetric(vertical: 48),
+                  child: Column(
+                    children: [
+                      CustomIconWidget(
+                        iconName: 'explore_off',
+                        color: theme.colorScheme.onSurfaceVariant,
+                        size: 48,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'No Destinations Yet',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Add destinations to see them on the map',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    itemCount: destinations.length,
+                    separatorBuilder: (context, index) => Divider(
+                      height: 1,
+                      indent: 88,
+                    ),
+                    itemBuilder: (context, index) {
+                      final destination = destinations[index];
+                      return _buildDestinationItem(context, theme, destination);
+                    },
+                  ),
+                ),
         ],
       ),
     );
@@ -79,6 +107,9 @@ class DestinationListSheetWidget extends StatelessWidget {
     ThemeData theme,
     Map<String, dynamic> destination,
   ) {
+    final photoPath = destination["photo_path"] as String?;
+    final hasPhoto = photoPath != null && photoPath.isNotEmpty;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -90,15 +121,20 @@ class DestinationListSheetWidget extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
+              // Photo thumbnail or placeholder
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: CustomImageWidget(
-                  imageUrl: destination["image"] as String,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
-                  semanticLabel: destination["semanticLabel"] as String,
-                ),
+                child: hasPhoto
+                    ? Image.file(
+                        File(photoPath),
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildPlaceholder(theme);
+                        },
+                      )
+                    : _buildPlaceholder(theme),
               ),
               SizedBox(width: 16),
               Expanded(
@@ -124,20 +160,6 @@ class DestinationListSheetWidget extends StatelessWidget {
                     Row(
                       children: [
                         CustomIconWidget(
-                          iconName: 'star',
-                          color: theme.colorScheme.primary,
-                          size: 14,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          destination["rating"].toString(),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        CustomIconWidget(
                           iconName: 'access_time',
                           color: theme.colorScheme.onSurfaceVariant,
                           size: 14,
@@ -145,7 +167,7 @@ class DestinationListSheetWidget extends StatelessWidget {
                         SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            destination["openingHours"] as String,
+                            destination["opening_hours"] as String? ?? 'N/A',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -166,6 +188,21 @@ class DestinationListSheetWidget extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder(ThemeData theme) {
+    return Container(
+      width: 56,
+      height: 56,
+      color: theme.colorScheme.primaryContainer,
+      child: Center(
+        child: CustomIconWidget(
+          iconName: 'image',
+          color: theme.colorScheme.onSurfaceVariant,
+          size: 24,
         ),
       ),
     );

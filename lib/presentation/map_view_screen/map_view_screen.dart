@@ -33,74 +33,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
   String _searchQuery = '';
   LatLng? _selectedLocation;
   bool _mapLoaded = false;
-
-  // Mock destinations data menggunakan coordinates
-  final List<Map<String, dynamic>> _destinations = [
-    {
-      "id": 1,
-      "name": "Curug Jenggala",
-      "description":
-          "Curug Jenggala adalah air terjun yang berlokasi di Ketenger, Baturaden, Banyumas. Air terjun ini memiliki ketinggian 30 meter dari permukaan tanah.",
-      "latitude": -7.308877709465497,
-      "longitude": 109.20872405118497,
-      "image": "https://images.unsplash.com/photo-1622874755957-c86bf0a9178a",
-      "semanticLabel":
-          "Aerial view of the Golden Gate Bridge spanning across blue water with San Francisco cityscape in background",
-      "openingHours": "Open 24 hours",
-      "rating": 4.7,
-    },
-    {
-      "id": 2,
-      "name": "Alcatraz Island",
-      "description":
-          "Historic federal prison on an island in San Francisco Bay",
-      "latitude": 37.8267,
-      "longitude": -122.4233,
-      "image": "https://images.unsplash.com/photo-1662141766733-dfc794d59250",
-      "semanticLabel":
-          "Historic Alcatraz prison building on rocky island surrounded by dark blue ocean waters",
-      "openingHours": "9:00 AM - 6:00 PM",
-      "rating": 4.6,
-    },
-    {
-      "id": 3,
-      "name": "Fisherman's Wharf",
-      "description":
-          "Waterfront neighborhood with seafood restaurants and shops",
-      "latitude": 37.8080,
-      "longitude": -122.4177,
-      "image": "https://images.unsplash.com/photo-1674771742598-c06f40af1880",
-      "semanticLabel":
-          "Bustling waterfront pier with colorful shops, restaurants, and boats docked along wooden boardwalk",
-      "openingHours": "10:00 AM - 9:00 PM",
-      "rating": 4.5,
-    },
-    {
-      "id": 4,
-      "name": "Lombard Street",
-      "description": "Famous winding street with eight hairpin turns",
-      "latitude": 37.8021,
-      "longitude": -122.4187,
-      "image": "https://images.unsplash.com/photo-1567858616284-77a8cf6134a1",
-      "semanticLabel":
-          "Steep winding street with red brick road surface lined with colorful flowers and Victorian houses",
-      "openingHours": "Open 24 hours",
-      "rating": 4.7,
-    },
-    {
-      "id": 5,
-      "name": "Palace of Fine Arts",
-      "description":
-          "Monumental structure with classical architecture and lagoon",
-      "latitude": 37.8029,
-      "longitude": -122.4486,
-      "image": "https://images.unsplash.com/photo-1580941382035-a2b066fd2484",
-      "semanticLabel":
-          "Classical Roman-style rotunda with columns reflected in calm lagoon water at sunset",
-      "openingHours": "6:00 AM - 9:00 PM",
-      "rating": 4.9,
-    },
-  ];
+  List<Map<String, dynamic>> _destinations = [];
 
   static const String _darkMapStyle = '''
 [
@@ -281,6 +214,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
   Future<void> _initializeMap() async {
     try {
       await _getCurrentLocation();
+      await _loadDestinations();
       await _createMarkers();
       setState(() => _isLoading = false);
     } catch (e) {
@@ -290,6 +224,24 @@ class _MapViewScreenState extends State<MapViewScreen> {
           SnackBar(
             content:
                 Text('Unable to load map. Please check location permissions.'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadDestinations() async {
+    try {
+      final destinations = await DatabaseHelper.instance.getAllDestinations();
+      setState(() {
+        _destinations = destinations;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading destinations: ${e.toString()}'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -328,8 +280,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   Future<void> _createMarkers() async {
     _markers.clear();
-    final destinations = await DatabaseHelper.instance.getAllDestinations();
-    for (var destination in destinations) {
+
+    for (var destination in _destinations) {
       final marker = Marker(
         markerId: MarkerId(destination["id"].toString()),
         position: LatLng(
@@ -339,12 +291,16 @@ class _MapViewScreenState extends State<MapViewScreen> {
         infoWindow: InfoWindow(
           title: destination["name"] as String,
           snippet: destination["description"] as String,
-          onTap: () => _navigateToDetail(destination["id"] as int),
+          onTap: () => _navigateToDetail(destination),
         ),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
         onTap: () => _onMarkerTapped(destination),
       );
       _markers.add(marker);
+    }
+
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -362,11 +318,11 @@ class _MapViewScreenState extends State<MapViewScreen> {
     );
   }
 
-  void _navigateToDetail(int destinationId) {
+  void _navigateToDetail(Map<String, dynamic> destination) {
     Navigator.pushNamed(
       context,
       '/destination-detail-screen',
-      arguments: destinationId,
+      arguments: destination,
     );
   }
 
@@ -381,7 +337,18 @@ class _MapViewScreenState extends State<MapViewScreen> {
   }
 
   void _fitAllMarkers() {
-    if (_markers.isEmpty) return;
+    if (_markers.isEmpty) {
+      // If no markers, center on current position or default location
+      if (_currentPosition != null) {
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(
+            LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+            12,
+          ),
+        );
+      }
+      return;
+    }
 
     LatLngBounds bounds;
     List<LatLng> positions = _markers.map((m) => m.position).toList();
@@ -474,35 +441,11 @@ class _MapViewScreenState extends State<MapViewScreen> {
     setState(() => _searchQuery = query);
   }
 
-  void _onLocationSelected(LatLng location, String placeName) {
+  void _onDestinationSelected(Map<String, dynamic> destination) {
+    _onMarkerTapped(destination);
     setState(() {
-      _selectedLocation = location;
       _showSearchOverlay = false;
     });
-
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(location, 15),
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Long press on map to add "$placeName" as destination'),
-        action: SnackBarAction(
-          label: 'Add',
-          onPressed: () {
-            Navigator.pushNamed(
-              context,
-              '/add-destination-screen',
-              arguments: {
-                'latitude': location.latitude,
-                'longitude': location.longitude,
-                'name': placeName,
-              },
-            );
-          },
-        ),
-      ),
-    );
   }
 
   @override
@@ -510,8 +453,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor:
-          Colors.white, // Temporary change to diagnose black screen
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: CustomAppBar(
         title: 'Map View',
         variant: CustomAppBarVariant.standard,
@@ -583,7 +525,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
                         target: _currentPosition != null
                             ? LatLng(_currentPosition!.latitude,
                                 _currentPosition!.longitude)
-                            : LatLng(37.8199, -122.4783),
+                            : LatLng(-7.4297, 109.2401), // Default: Purwokerto
                         zoom: 12,
                       ),
                       markers: _markers,
@@ -603,11 +545,11 @@ class _MapViewScreenState extends State<MapViewScreen> {
                             'longitude': location.longitude,
                           },
                         );
-                        if (mounted) {
+                        if (result == true && mounted) {
                           setState(() => _isLoading = true);
-                          if (result == true) {
-                            await _createMarkers();
-                          }
+                          await _loadDestinations();
+                          await _createMarkers();
+                          setState(() => _isLoading = false);
                         }
                       },
                     ),
@@ -615,7 +557,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
                       SearchOverlayWidget(
                         searchQuery: _searchQuery,
                         onSearchQueryChanged: _onSearchQueryChanged,
-                        onLocationSelected: _onLocationSelected,
+                        onDestinationSelected: _onDestinationSelected,
                         onClose: _toggleSearchOverlay,
                       ),
                     Positioned(
