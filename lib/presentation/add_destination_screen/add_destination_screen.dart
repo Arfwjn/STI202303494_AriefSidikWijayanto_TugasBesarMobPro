@@ -14,7 +14,7 @@ import './widgets/opening_hours_section_widget.dart';
 import './widgets/photo_section_widget.dart';
 
 /// Add Destination Screen
-/// Enables comprehensive destination entry through scrollable form layout
+/// Memungkinkan pengisian data destinations secara lengkap melalui scrollable form layout
 class AddDestinationScreen extends StatefulWidget {
   const AddDestinationScreen({super.key});
 

@@ -8,7 +8,7 @@ import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
 /// Photo Section Widget
-/// Displays selected image thumbnail with Add Photo button
+/// Menampilkan image thumbnail dengan tombol Add Photo
 class PhotoSectionWidget extends StatelessWidget {
   final XFile? selectedImage;
   final Function(ImageSource) onPhotoSelected;

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
-/// Search bar widget for filtering destinations
+/// Search bar widget untuk filtering destinations
 class SearchBarWidget extends StatefulWidget {
   final ValueChanged<String> onSearch;
   final String? initialQuery;

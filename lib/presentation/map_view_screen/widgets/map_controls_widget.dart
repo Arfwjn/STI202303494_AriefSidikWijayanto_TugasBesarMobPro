@@ -5,8 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
-/// Map controls widget for toggling map type
-/// Provides satellite/terrain view switching
+/// Kontrol map untuk toggling tipe map
 class MapControlsWidget extends StatelessWidget {
   final MapType currentMapType;
   final VoidCallback onToggleMapType;

@@ -5,7 +5,7 @@ import 'package:sizer/sizer.dart';
 import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
-/// Widget displaying destination name, description, and basic information
+/// Widget untuk menampilkan nama, deskripsi, dan informasi destination
 class DestinationInfoWidget extends StatelessWidget {
   final String name;
   final String description;

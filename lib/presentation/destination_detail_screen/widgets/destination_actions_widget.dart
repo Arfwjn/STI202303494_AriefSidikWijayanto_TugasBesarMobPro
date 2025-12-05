@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
-/// Widget containing action buttons for map view and directions
+/// Widget yang menampung action buttons untuk map view dan directions
 class DestinationActionsWidget extends StatelessWidget {
   final double latitude;
   final double longitude;
@@ -23,7 +23,7 @@ class DestinationActionsWidget extends StatelessWidget {
     final theme = Theme.of(context);
 
     try {
-      // Try Google Maps first
+      // Coba Google Maps dulu
       final googleMapsUrl = Uri.parse(
           'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude');
 
@@ -33,7 +33,7 @@ class DestinationActionsWidget extends StatelessWidget {
           mode: LaunchMode.externalApplication,
         );
       } else {
-        // Fallback to Apple Maps on iOS
+        // Fallback ke Apple Maps di iOS
         final appleMapsUrl =
             Uri.parse('https://maps.apple.com/?daddr=$latitude,$longitude');
 
@@ -73,7 +73,7 @@ class DestinationActionsWidget extends StatelessWidget {
       padding: EdgeInsets.all(4.w),
       child: Column(
         children: [
-          // View on Map button
+          // Tombol View on Map
           SizedBox(
             width: double.infinity,
             height: 6.h,
@@ -112,7 +112,7 @@ class DestinationActionsWidget extends StatelessWidget {
 
           SizedBox(height: 2.h),
 
-          // Get Directions button
+          // Tombol Get Directions
           SizedBox(
             width: double.infinity,
             height: 6.h,

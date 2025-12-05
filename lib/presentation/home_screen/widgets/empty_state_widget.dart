@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
-/// Empty state widget when no destinations are available
+/// Empty state widget ketika tidak ada destinations
 class EmptyStateWidget extends StatelessWidget {
   final VoidCallback onAddDestination;
 

@@ -5,8 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
-/// Search overlay widget for finding locations
-/// Provides autocomplete suggestions and location selection
+/// Search overlay widget untuk menemukan lokasi
 class SearchOverlayWidget extends StatefulWidget {
   final String searchQuery;
   final Function(String) onSearchQueryChanged;
@@ -29,37 +28,42 @@ class _SearchOverlayWidgetState extends State<SearchOverlayWidget> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
-  // Mock search suggestions
+  // Mock saran pencarian
   final List<Map<String, dynamic>> _mockSuggestions = [
     {
-      "name": "Coit Tower",
-      "address": "1 Telegraph Hill Blvd, San Francisco, CA",
-      "latitude": 37.8024,
-      "longitude": -122.4058,
+      "name": "Curug Jenggala",
+      "address":
+          "Jl. Pangeran Limboro, Dusun III Kalipagu, Ketenger, Kec. Baturaden, Kabupaten Banyumas, Jawa Tengah",
+      "latitude": -7.308877709465497,
+      "longitude": 109.20872405118497,
     },
     {
-      "name": "Twin Peaks",
-      "address": "501 Twin Peaks Blvd, San Francisco, CA",
-      "latitude": 37.7544,
-      "longitude": -122.4477,
+      "name": "Menara Pandang Teratai",
+      "address":
+          "Jl. Bung Karno, Kalibener, Kedungwuluh, Kec. Purwokerto Tim., Kabupaten Banyumas, Jawa Tengah",
+      "latitude": -7.431312718223754,
+      "longitude": 109.23249445118637,
     },
     {
-      "name": "Chinatown",
-      "address": "Grant Avenue, San Francisco, CA",
-      "latitude": 37.7941,
-      "longitude": -122.4078,
+      "name": "Alun-Alun Purwokerto",
+      "address":
+          "Komplek PJKA 386-388, JL. Jend. Sudirman, Purwokerto Lor, Purwokerto, Sokanegara, Kec. Purwokerto Tim., Kabupaten Banyumas, Jawa Tengah",
+      "latitude": -7.423757694467924,
+      "longitude": 109.23013411699363,
     },
     {
-      "name": "Pier 39",
-      "address": "Beach Street & The Embarcadero, San Francisco, CA",
-      "latitude": 37.8087,
-      "longitude": -122.4098,
+      "name": "Taman Andhang Pangrenan",
+      "address":
+          "Jalan Gerilya Purwokerto Selatan, Jl. Prof. M Yamin I, Windusara, Karangklesem, Kec. Banyumas, Kabupaten Banyumas, Jawa Tengah",
+      "latitude": -7.439814441594049,
+      "longitude": 109.24371685036475,
     },
     {
-      "name": "Cable Car Museum",
-      "address": "1201 Mason St, San Francisco, CA",
-      "latitude": 37.7946,
-      "longitude": -122.4115,
+      "name": "STMIK Widya Utama Purwokerto",
+      "address":
+          "Jl. Sunan Kalijaga, Dusun III, Berkoh, Kec. Purwokerto Sel., Kabupaten Banyumas, Jawa Tengah",
+      "latitude": -7.439159591700715,
+      "longitude": 109.2662043242014,
     },
   ];
 

@@ -5,7 +5,7 @@ import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
 /// Opening Hours Section Widget
-/// Displays opening and closing time selection using TimePicker
+/// Menampilkan opening dan closing time menggunakan TimePicker
 class OpeningHoursSectionWidget extends StatelessWidget {
   final TimeOfDay? openingTime;
   final TimeOfDay? closingTime;

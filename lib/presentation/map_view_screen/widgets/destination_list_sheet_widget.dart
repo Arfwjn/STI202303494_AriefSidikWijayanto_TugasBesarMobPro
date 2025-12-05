@@ -3,8 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/app_export.dart';
 
-/// Bottom sheet widget displaying list of destinations
-/// Allows quick selection and map centering
+/// Bottom sheet widget menampilkan list destinations
 class DestinationListSheetWidget extends StatelessWidget {
   final List<Map<String, dynamic>> destinations;
   final Function(Map<String, dynamic>) onDestinationSelected;

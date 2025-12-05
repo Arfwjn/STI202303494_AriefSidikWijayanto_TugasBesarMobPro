@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../services/database_helper.dart';
 import '../../widgets/custom_app_bar.dart';
 import './widgets/coordinates_section_widget.dart';
 import './widgets/form_fields_widget.dart';
@@ -47,30 +48,48 @@ class _EditDestinationScreenState extends State<EditDestinationScreen> {
     _latitudeController.text = widget.destination['latitude']?.toString() ?? '';
     _longitudeController.text =
         widget.destination['longitude']?.toString() ?? '';
-    _currentImagePath = widget.destination['imagePath'];
+    _currentImagePath = widget.destination['photo_path'];
 
-    if (widget.destination['openingTime'] != null) {
-      final openingParts =
-          (widget.destination['openingTime'] as String).split(':');
-      _openingTime = TimeOfDay(
-        hour: int.parse(openingParts[0]),
-        minute: int.parse(openingParts[1]),
-      );
-    }
-
-    if (widget.destination['closingTime'] != null) {
-      final closingParts =
-          (widget.destination['closingTime'] as String).split(':');
-      _closingTime = TimeOfDay(
-        hour: int.parse(closingParts[0]),
-        minute: int.parse(closingParts[1]),
-      );
+    // Parse jam buka dari format database
+    final openingHours = widget.destination['opening_hours'] as String?;
+    if (openingHours != null && openingHours.isNotEmpty) {
+      final parts = openingHours.split(' - ');
+      if (parts.length == 2) {
+        _openingTime = _parseTimeOfDay(parts[0]);
+        _closingTime = _parseTimeOfDay(parts[1]);
+      }
     }
 
     _nameController.addListener(_onFormChanged);
     _descriptionController.addListener(_onFormChanged);
     _latitudeController.addListener(_onFormChanged);
     _longitudeController.addListener(_onFormChanged);
+  }
+
+  TimeOfDay? _parseTimeOfDay(String timeString) {
+    try {
+      // Parse format "08:00 AM" atau "8:00 PM"
+      timeString = timeString.trim();
+      final parts = timeString.split(' ');
+      if (parts.length != 2) return null;
+
+      final timeParts = parts[0].split(':');
+      if (timeParts.length != 2) return null;
+
+      var hour = int.parse(timeParts[0]);
+      final minute = int.parse(timeParts[1]);
+      final period = parts[1].toUpperCase();
+
+      if (period == 'PM' && hour != 12) {
+        hour += 12;
+      } else if (period == 'AM' && hour == 12) {
+        hour = 0;
+      }
+
+      return TimeOfDay(hour: hour, minute: minute);
+    } catch (e) {
+      return null;
+    }
   }
 
   void _onFormChanged() {
@@ -232,37 +251,58 @@ class _EditDestinationScreenState extends State<EditDestinationScreen> {
     setState(() => _isUpdating = true);
 
     try {
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Format jam buka
+      String? openingHoursFormatted;
+      if (_openingTime != null && _closingTime != null) {
+        openingHoursFormatted =
+            '${_openingTime!.format(context)} - ${_closingTime!.format(context)}';
+      }
+
+      // Tentukan path foto
+      String? finalPhotoPath;
+      if (_photoRemoved) {
+        finalPhotoPath = '';
+      } else if (_newImagePath != null) {
+        finalPhotoPath = _newImagePath;
+      } else {
+        finalPhotoPath = _currentImagePath ?? '';
+      }
 
       final updatedDestination = {
-        'id': widget.destination['id'],
         'name': _nameController.text.trim(),
         'description': _descriptionController.text.trim(),
         'latitude': double.tryParse(_latitudeController.text) ?? 0.0,
         'longitude': double.tryParse(_longitudeController.text) ?? 0.0,
-        'openingTime': _openingTime != null
-            ? '${_openingTime!.hour.toString().padLeft(2, '0')}:${_openingTime!.minute.toString().padLeft(2, '0')}'
-            : null,
-        'closingTime': _closingTime != null
-            ? '${_closingTime!.hour.toString().padLeft(2, '0')}:${_closingTime!.minute.toString().padLeft(2, '0')}'
-            : null,
-        'imagePath':
-            _photoRemoved ? null : (_newImagePath ?? _currentImagePath),
+        'opening_hours': openingHoursFormatted ?? '',
+        'photo_path': finalPhotoPath,
+        // Keep the original created_at date
+        'created_at': widget.destination['created_at'],
       };
 
-      if (mounted) {
-        Navigator.pop(context, updatedDestination);
+      // Update in database
+      final result = await DatabaseHelper.instance.updateDestination(
+        widget.destination['id'] as int,
+        updatedDestination,
+      );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Destination updated successfully',
-              style: Theme.of(context).textTheme.bodyMedium,
+      if (mounted) {
+        if (result > 0) {
+          Navigator.pop(
+              context, true); // Return true untuk mengindikasi bahwa sukses
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Destination updated successfully',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
             ),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+          );
+        } else {
+          throw Exception('Update failed');
+        }
       }
     } catch (e) {
       setState(() => _isUpdating = false);

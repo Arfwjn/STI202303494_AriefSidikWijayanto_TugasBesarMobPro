@@ -3,12 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
+import '../../services/database_helper.dart';
 import '../../widgets/custom_icon_widget.dart';
 import './widgets/destination_actions_widget.dart';
 import './widgets/destination_header_widget.dart';
 import './widgets/destination_info_widget.dart';
 
-/// Destination Detail Screen displaying comprehensive destination information
+/// Destination Detail Screen menampilkan informasi komprehensif destination
 class DestinationDetailScreen extends StatefulWidget {
   const DestinationDetailScreen({super.key});
 
@@ -18,21 +19,53 @@ class DestinationDetailScreen extends StatefulWidget {
 }
 
 class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
-  // Mock destination data
-  final Map<String, dynamic> _destinationData = {
-    "id": 1,
-    "name": "Golden Gate Bridge",
-    "description":
-        "The Golden Gate Bridge is a suspension bridge spanning the Golden Gate, the one-mile-wide strait connecting San Francisco Bay and the Pacific Ocean. The structure links the U.S. city of San Francisco, California—the northern tip of the San Francisco Peninsula—to Marin County, carrying both U.S. Route 101 and California State Route 1 across the strait. It has been declared one of the Wonders of the Modern World by the American Society of Civil Engineers.",
-    "openingHours": "Open 24 hours",
-    "latitude": 37.8199,
-    "longitude": -122.4783,
-    "imageUrl": "https://images.unsplash.com/photo-1727402041671-3ca1420e35c4",
-    "semanticLabel":
-        "Iconic orange-red Golden Gate Bridge spanning across blue waters with San Francisco skyline in background under clear sky",
-  };
+  Map<String, dynamic>? _destinationData;
+  bool _isLoading = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (args != null && _destinationData == null) {
+      _destinationData = args;
+      _loadDestinationData();
+    }
+  }
+
+  Future<void> _loadDestinationData() async {
+    if (_destinationData == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final id = _destinationData!['id'] as int;
+      final freshData = await DatabaseHelper.instance.getDestination(id);
+
+      if (freshData != null && mounted) {
+        setState(() {
+          _destinationData = freshData;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading destination: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
 
   void _showDeleteConfirmation() {
+    if (_destinationData == null) return;
+
     final theme = Theme.of(context);
 
     showDialog(
@@ -59,7 +92,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
           ],
         ),
         content: Text(
-          'Are you sure you want to delete "${_destinationData["name"]}"? This action cannot be undone.',
+          'Are you sure you want to delete "${_destinationData!["name"]}"? This action cannot be undone.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurface,
           ),
@@ -100,61 +133,89 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
     );
   }
 
-  void _deleteDestination() {
+  Future<void> _deleteDestination() async {
+    if (_destinationData == null) return;
+
     final theme = Theme.of(context);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            CustomIconWidget(
-              iconName: 'check_circle',
-              color: Colors.white,
-              size: 20,
-            ),
-            SizedBox(width: 2.w),
-            Expanded(
-              child: Text(
-                'Destination deleted successfully',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: theme.colorScheme.tertiary,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    try {
+      await DatabaseHelper.instance
+          .deleteDestination(_destinationData!['id'] as int);
 
-    // Navigate back to home screen after deletion
-    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home-screen');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                CustomIconWidget(
+                  iconName: 'check_circle',
+                  color: Colors.white,
+                  size: 20,
+                ),
+                SizedBox(width: 2.w),
+                Expanded(
+                  child: Text(
+                    'Destination deleted successfully',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: theme.colorScheme.tertiary,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Navigasi kembali ke home screen setelah deletion
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.pop(
+                context, true); // Return true untuk mengindikasi deletion
+          }
+        });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete destination: ${e.toString()}'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
-  void _navigateToEdit() {
+  Future<void> _navigateToEdit() async {
+    if (_destinationData == null) return;
+
     HapticFeedback.lightImpact();
-    Navigator.pushNamed(
+    final result = await Navigator.pushNamed(
       context,
       '/edit-destination-screen',
       arguments: _destinationData,
     );
+
+    if (result == true && mounted) {
+      // Reload destination data setelah edit
+      await _loadDestinationData();
+    }
   }
 
   void _navigateToMap() {
+    if (_destinationData == null) return;
+
     HapticFeedback.lightImpact();
     Navigator.pushNamed(
       context,
       '/map-view-screen',
       arguments: {
-        'latitude': _destinationData['latitude'],
-        'longitude': _destinationData['longitude'],
-        'name': _destinationData['name'],
+        'latitude': _destinationData!['latitude'],
+        'longitude': _destinationData!['longitude'],
+        'name': _destinationData!['name'],
       },
     );
   }
@@ -163,15 +224,54 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      );
+    }
+
+    if (_destinationData == null) {
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CustomIconWidget(
+                iconName: 'error_outline',
+                color: theme.colorScheme.error,
+                size: 64,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Destination not found',
+                style: theme.textTheme.titleLarge,
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
-          // Hero header with image and actions
+          // Hero header dengan image dan actions
           SliverToBoxAdapter(
             child: DestinationHeaderWidget(
-              imageUrl: _destinationData['imageUrl'] as String,
-              semanticLabel: _destinationData['semanticLabel'] as String,
+              imageUrl: _destinationData!['photo_path'] as String? ?? '',
+              semanticLabel: 'Photo of ${_destinationData!['name']}',
               onBack: () {
                 HapticFeedback.lightImpact();
                 Navigator.pop(context);
@@ -181,22 +281,23 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
             ),
           ),
 
-          // Destination information
+          // Informasi destination
           SliverToBoxAdapter(
             child: DestinationInfoWidget(
-              name: _destinationData['name'] as String,
-              description: _destinationData['description'] as String,
-              openingHours: _destinationData['openingHours'] as String,
-              latitude: _destinationData['latitude'] as double,
-              longitude: _destinationData['longitude'] as double,
+              name: _destinationData!['name'] as String,
+              description: _destinationData!['description'] as String,
+              openingHours:
+                  _destinationData!['opening_hours'] as String? ?? 'N/A',
+              latitude: _destinationData!['latitude'] as double,
+              longitude: _destinationData!['longitude'] as double,
             ),
           ),
 
           // Action buttons
           SliverToBoxAdapter(
             child: DestinationActionsWidget(
-              latitude: _destinationData['latitude'] as double,
-              longitude: _destinationData['longitude'] as double,
+              latitude: _destinationData!['latitude'] as double,
+              longitude: _destinationData!['longitude'] as double,
               onViewOnMap: _navigateToMap,
             ),
           ),

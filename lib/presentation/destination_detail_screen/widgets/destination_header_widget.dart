@@ -1,10 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
 
-/// Hero header widget displaying destination image with gradient overlay
+/// Hero header widget menampilkan gambar destination dengan gradient overlay
 class DestinationHeaderWidget extends StatelessWidget {
   final String imageUrl;
   final String semanticLabel;
@@ -33,16 +34,10 @@ class DestinationHeaderWidget extends StatelessWidget {
           // Hero image
           Hero(
             tag: 'destination_image_$imageUrl',
-            child: CustomImageWidget(
-              imageUrl: imageUrl,
-              width: double.infinity,
-              height: 40.h,
-              fit: BoxFit.cover,
-              semanticLabel: semanticLabel,
-            ),
+            child: _buildImage(theme),
           ),
 
-          // Gradient overlay for text readability
+          // Gradient overlay untuk text readability
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -151,6 +146,63 @@ class DestinationHeaderWidget extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImage(ThemeData theme) {
+    // Check imageUrl adalah local file path atau network URL
+    if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+      // Local file
+      final file = File(imageUrl);
+      if (file.existsSync()) {
+        return Image.file(
+          file,
+          width: double.infinity,
+          height: 40.h,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildPlaceholder(theme);
+          },
+        );
+      }
+    } else if (imageUrl.startsWith('http')) {
+      // Network image
+      return CustomImageWidget(
+        imageUrl: imageUrl,
+        width: double.infinity,
+        height: 40.h,
+        fit: BoxFit.cover,
+        semanticLabel: semanticLabel,
+        errorWidget: _buildPlaceholder(theme),
+      );
+    }
+
+    // tidak ada gambar atau gagal dimuat
+    return _buildPlaceholder(theme);
+  }
+
+  Widget _buildPlaceholder(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      height: 40.h,
+      color: theme.colorScheme.primaryContainer,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CustomIconWidget(
+            iconName: 'image',
+            color: theme.colorScheme.onSurfaceVariant,
+            size: 64,
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            'No Image Available',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],

@@ -4,7 +4,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../../../core/app_export.dart';
 
-/// Destination card widget for displaying destination information
+/// Destination card widget untuk menampilkan informasi destination
 class DestinationCardWidget extends StatelessWidget {
   final Map<String, dynamic> destination;
   final VoidCallback onTap;
@@ -162,16 +162,19 @@ class DestinationCardWidget extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              IconButton(
-                icon: CustomIconWidget(
-                  iconName: 'more_vert',
-                  color: theme.colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-                onPressed: () => _showContextMenu(
-                    theme.scaffoldBackgroundColor as BuildContext),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+              Builder(
+                builder: (BuildContext btnContext) {
+                  return IconButton(
+                    icon: CustomIconWidget(
+                      iconName: 'more_vert',
+                      color: theme.colorScheme.onSurfaceVariant,
+                      size: 20,
+                    ),
+                    onPressed: () => _showContextMenu(btnContext),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  );
+                },
               ),
             ],
           ),

@@ -6,7 +6,7 @@ import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
 /// Coordinates Section Widget
-/// Shows latitude/longitude inputs with Use Current Location button
+/// Menunjukan input latitude/longitude dengan tombol Use Current Location
 class CoordinatesSectionWidget extends StatelessWidget {
   final TextEditingController latitudeController;
   final TextEditingController longitudeController;

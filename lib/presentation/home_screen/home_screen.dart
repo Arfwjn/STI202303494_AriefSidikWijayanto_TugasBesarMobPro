@@ -9,7 +9,7 @@ import './widgets/destination_card_widget.dart';
 import './widgets/empty_state_widget.dart';
 import './widgets/search_bar_widget.dart';
 
-/// Layar utama untuk penemuan destinasi
+/// Layar utama untuk destinasi
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -350,20 +350,32 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _navigateToDestinationDetail(Map<String, dynamic> destination) {
-    Navigator.pushNamed(
+  Future<void> _navigateToDestinationDetail(
+      Map<String, dynamic> destination) async {
+    final result = await Navigator.pushNamed(
       context,
       '/destination-detail-screen',
       arguments: destination,
     );
+
+    if (result == true && mounted) {
+      // Reload destinations jika destination dihapus di layar detail
+      await _loadDestinations();
+    }
   }
 
-  void _navigateToEditDestination(Map<String, dynamic> destination) {
-    Navigator.pushNamed(
+  Future<void> _navigateToEditDestination(
+      Map<String, dynamic> destination) async {
+    final result = await Navigator.pushNamed(
       context,
       '/edit-destination-screen',
       arguments: destination,
     );
+
+    if (result == true && mounted) {
+      // Reload destinations setelah editing
+      await _loadDestinations();
+    }
   }
 
   void _navigateToMapView(Map<String, dynamic> destination) {
