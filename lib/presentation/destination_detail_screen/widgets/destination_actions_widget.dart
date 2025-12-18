@@ -5,19 +5,37 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
+import './route_viewer_widget.dart';
 
-/// Widget yang menampung action buttons untuk map view dan directions
+/// Widget yang menampung action buttons untuk map view, route, dan directions
 class DestinationActionsWidget extends StatelessWidget {
   final double latitude;
   final double longitude;
+  final String destinationName;
   final VoidCallback onViewOnMap;
 
   const DestinationActionsWidget({
     super.key,
     required this.latitude,
     required this.longitude,
+    required this.destinationName,
     required this.onViewOnMap,
   });
+
+  Future<void> _showRoute(BuildContext context) async {
+    HapticFeedback.lightImpact();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RouteViewerWidget(
+          destinationLat: latitude,
+          destinationLng: longitude,
+          destinationName: destinationName,
+        ),
+      ),
+    );
+  }
 
   Future<void> _launchDirections(BuildContext context) async {
     final theme = Theme.of(context);
@@ -102,6 +120,42 @@ class DestinationActionsWidget extends StatelessWidget {
                     'View on Map',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(height: 2.h),
+
+          // Tombol Show Route (NEW)
+          SizedBox(
+            width: double.infinity,
+            height: 6.h,
+            child: ElevatedButton(
+              onPressed: () => _showRoute(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.secondary,
+                foregroundColor: theme.colorScheme.onSecondary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CustomIconWidget(
+                    iconName: 'route',
+                    color: theme.colorScheme.onSecondary,
+                    size: 20,
+                  ),
+                  SizedBox(width: 2.w),
+                  Text(
+                    'Show Route & Distance',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

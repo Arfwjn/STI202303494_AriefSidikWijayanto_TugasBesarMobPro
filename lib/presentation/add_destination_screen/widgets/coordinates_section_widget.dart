@@ -6,12 +6,13 @@ import '../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
 /// Coordinates Section Widget
-/// Menunjukan input latitude/longitude dengan tombol Use Current Location
+/// Menunjukan input latitude/longitude dengan tombol Use Current Location dan Pick from Map
 class CoordinatesSectionWidget extends StatelessWidget {
   final TextEditingController latitudeController;
   final TextEditingController longitudeController;
   final bool isLoadingLocation;
   final VoidCallback onUseCurrentLocation;
+  final VoidCallback? onPickFromMap;
 
   const CoordinatesSectionWidget({
     super.key,
@@ -19,6 +20,7 @@ class CoordinatesSectionWidget extends StatelessWidget {
     required this.longitudeController,
     required this.isLoadingLocation,
     required this.onUseCurrentLocation,
+    this.onPickFromMap,
   });
 
   @override
@@ -113,6 +115,33 @@ class CoordinatesSectionWidget extends StatelessWidget {
             ],
           ),
           SizedBox(height: 2.h),
+
+          // Pick from Map button
+          if (onPickFromMap != null) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onPickFromMap,
+                icon: CustomIconWidget(
+                  iconName: 'map',
+                  color: theme.colorScheme.onPrimary,
+                  size: 20,
+                ),
+                label: Text(
+                  'Pick from Map',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onPrimary,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 1.5.h),
+                ),
+              ),
+            ),
+            SizedBox(height: 1.h),
+          ],
+
+          // Use Current Location button
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -159,7 +188,9 @@ class CoordinatesSectionWidget extends StatelessWidget {
               SizedBox(width: 1.w),
               Expanded(
                 child: Text(
-                  'Tap to automatically fill coordinates using GPS',
+                  onPickFromMap != null
+                      ? 'Pick location from map or use GPS coordinates'
+                      : 'Tap to automatically fill coordinates using GPS',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sizer/sizer.dart';
@@ -12,6 +13,7 @@ import '../../widgets/custom_icon_widget.dart';
 import './widgets/coordinates_section_widget.dart';
 import './widgets/opening_hours_section_widget.dart';
 import './widgets/photo_section_widget.dart';
+import './widgets/location_picker_widget.dart';
 
 /// Add Destination Screen
 /// Memungkinkan pengisian data destinations secara lengkap melalui scrollable form layout
@@ -151,6 +153,42 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
     }
   }
 
+  Future<void> _handlePickFromMap() async {
+    try {
+      LatLng? initialLocation;
+
+      // Jika sudah ada koordinat, gunakan sebagai initial location
+      if (_latitudeController.text.isNotEmpty &&
+          _longitudeController.text.isNotEmpty) {
+        final lat = double.tryParse(_latitudeController.text);
+        final lng = double.tryParse(_longitudeController.text);
+        if (lat != null && lng != null) {
+          initialLocation = LatLng(lat, lng);
+        }
+      }
+
+      final LatLng? result = await Navigator.push<LatLng>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LocationPickerWidget(
+            initialLocation: initialLocation,
+          ),
+        ),
+      );
+
+      if (result != null) {
+        setState(() {
+          _latitudeController.text = result.latitude.toStringAsFixed(6);
+          _longitudeController.text = result.longitude.toStringAsFixed(6);
+        });
+        HapticFeedback.lightImpact();
+        _showSnackBar('Location selected from map');
+      }
+    } catch (e) {
+      _showSnackBar('Failed to pick location', isError: true);
+    }
+  }
+
   void _handleOpeningTimeSelection(TimeOfDay time) {
     setState(() => _openingTime = time);
     HapticFeedback.lightImpact();
@@ -240,6 +278,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                   longitudeController: _longitudeController,
                   isLoadingLocation: _isLoadingLocation,
                   onUseCurrentLocation: _handleUseCurrentLocation,
+                  onPickFromMap: _handlePickFromMap,
                 ),
                 SizedBox(height: 4.h),
               ],
