@@ -36,6 +36,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
   bool _mapCreated = false;
   List<Map<String, dynamic>> _destinations = [];
   String _errorMessage = '';
+  Map<String, dynamic>? _focusDestination;
 
   // Default location (Purwokerto, Indonesia)
   static const LatLng _defaultLocation = LatLng(-7.4297, 109.2401);
@@ -47,7 +48,27 @@ class _MapViewScreenState extends State<MapViewScreen> {
   void initState() {
     super.initState();
     debugPrint('MapViewScreen: Initializing...');
-    _initializeMap();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Get arguments if available
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (args != null && args.containsKey('focusDestination')) {
+      _focusDestination = args['focusDestination'] as Map<String, dynamic>?;
+    }
+
+    // Initialize map only once
+    if (_destinations.isEmpty && !_isLoading && _errorMessage.isEmpty) {
+      return;
+    }
+
+    if (_destinations.isEmpty) {
+      _initializeMap();
+    }
   }
 
   @override
@@ -254,9 +275,43 @@ class _MapViewScreenState extends State<MapViewScreen> {
     // Fit markers after a short delay to ensure map is ready
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && _mapCreated) {
-        _fitAllMarkers();
+        if (_focusDestination != null) {
+          // Focus on specific destination
+          _focusOnDestination(_focusDestination!);
+        } else {
+          // Fit all markers
+          _fitAllMarkers();
+        }
       }
     });
+  }
+
+  void _focusOnDestination(Map<String, dynamic> destination) {
+    if (_mapController == null || !_mapCreated) {
+      debugPrint(
+          'MapViewScreen: Cannot focus on destination - controller not ready');
+      return;
+    }
+
+    try {
+      final location = LatLng(
+        destination['latitude'] as double,
+        destination['longitude'] as double,
+      );
+
+      debugPrint(
+          'MapViewScreen: Focusing on destination: ${destination['name']}');
+
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(location, 15),
+      );
+
+      setState(() {
+        _selectedLocation = location;
+      });
+    } catch (e) {
+      debugPrint('MapViewScreen: Error focusing on destination: $e');
+    }
   }
 
   void _fitAllMarkers() {

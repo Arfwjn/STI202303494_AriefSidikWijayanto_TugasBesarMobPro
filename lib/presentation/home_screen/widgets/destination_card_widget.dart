@@ -267,21 +267,6 @@ class DestinationCardWidget extends StatelessWidget {
               ),
               ListTile(
                 leading: CustomIconWidget(
-                  iconName: 'share',
-                  color: theme.colorScheme.primary,
-                  size: 24,
-                ),
-                title: Text(
-                  'Share Details',
-                  style: theme.textTheme.bodyLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _shareDestination(context);
-                },
-              ),
-              ListTile(
-                leading: CustomIconWidget(
                   iconName: 'delete',
                   color: theme.colorScheme.error,
                   size: 24,
@@ -302,24 +287,6 @@ class DestinationCardWidget extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  void _shareDestination(BuildContext context) {
-    final shareText = '''
-${destination['name']}
-
-${destination['description']}
-
-Opening Hours: ${destination['opening_hours']}
-Location: ${destination['latitude']}, ${destination['longitude']}
-''';
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Share functionality: $shareText'),
-        duration: const Duration(seconds: 2),
-      ),
     );
   }
 }
