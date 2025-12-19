@@ -15,8 +15,7 @@ import './widgets/opening_hours_section_widget.dart';
 import './widgets/photo_section_widget.dart';
 import './widgets/location_picker_widget.dart';
 
-/// Add Destination Screen
-/// Memungkinkan pengisian data destinations secara lengkap melalui scrollable form layout
+/// Add Destination Screen with mini map preview
 class AddDestinationScreen extends StatefulWidget {
   const AddDestinationScreen({super.key});
 
@@ -37,13 +36,88 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
   bool _isSaving = false;
   bool _isLoadingLocation = false;
 
+  GoogleMapController? _miniMapController;
+  final Set<Marker> _miniMapMarkers = {};
+  bool _hasValidLocation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if coordinates were passed from map view
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null) {
+        final lat = args['latitude'] as double?;
+        final lng = args['longitude'] as double?;
+        if (lat != null && lng != null) {
+          setState(() {
+            _latitudeController.text = lat.toStringAsFixed(6);
+            _longitudeController.text = lng.toStringAsFixed(6);
+            _hasValidLocation = true;
+            _updateMiniMapMarker();
+          });
+        }
+      }
+    });
+
+    _latitudeController.addListener(_onLocationChanged);
+    _longitudeController.addListener(_onLocationChanged);
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
+    _miniMapController?.dispose();
     super.dispose();
+  }
+
+  void _onLocationChanged() {
+    final lat = double.tryParse(_latitudeController.text);
+    final lng = double.tryParse(_longitudeController.text);
+
+    if (lat != null &&
+        lng != null &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180) {
+      setState(() {
+        _hasValidLocation = true;
+      });
+      _updateMiniMapMarker();
+    } else {
+      setState(() {
+        _hasValidLocation = false;
+      });
+    }
+  }
+
+  void _updateMiniMapMarker() {
+    if (!_hasValidLocation) return;
+
+    final lat = double.parse(_latitudeController.text);
+    final lng = double.parse(_longitudeController.text);
+    final location = LatLng(lat, lng);
+
+    setState(() {
+      _miniMapMarkers.clear();
+      _miniMapMarkers.add(
+        Marker(
+          markerId: const MarkerId('selected_location'),
+          position: location,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        ),
+      );
+    });
+
+    // Animate camera to new location
+    _miniMapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(location, 15),
+    );
   }
 
   bool get _isFormValid {
@@ -157,7 +231,6 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
     try {
       LatLng? initialLocation;
 
-      // Jika sudah ada koordinat, gunakan sebagai initial location
       if (_latitudeController.text.isNotEmpty &&
           _longitudeController.text.isNotEmpty) {
         final lat = double.tryParse(_latitudeController.text);
@@ -222,7 +295,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: CustomAppBar(
         variant: CustomAppBarVariant.standard,
-        title: 'Add Destination',
+        title: 'Add New Destination',
         automaticallyImplyLeading: false,
         leading: IconButton(
           icon: CustomIconWidget(
@@ -280,10 +353,56 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                   onUseCurrentLocation: _handleUseCurrentLocation,
                   onPickFromMap: _handlePickFromMap,
                 ),
+
+                // Mini Map Preview
+                if (_hasValidLocation) ...[
+                  SizedBox(height: 3.h),
+                  _buildSectionTitle(theme, 'Location Preview'),
+                  SizedBox(height: 2.h),
+                  _buildMiniMap(theme),
+                ],
+
                 SizedBox(height: 4.h),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniMap(ThemeData theme) {
+    final lat = double.parse(_latitudeController.text);
+    final lng = double.parse(_longitudeController.text);
+
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.dividerColor,
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: GoogleMap(
+          onMapCreated: (controller) {
+            _miniMapController = controller;
+          },
+          initialCameraPosition: CameraPosition(
+            target: LatLng(lat, lng),
+            zoom: 15,
+          ),
+          markers: _miniMapMarkers,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          scrollGesturesEnabled: false,
+          zoomGesturesEnabled: false,
+          rotateGesturesEnabled: false,
+          tiltGesturesEnabled: false,
+          mapType: MapType.normal,
         ),
       ),
     );

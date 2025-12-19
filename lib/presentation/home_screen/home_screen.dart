@@ -35,13 +35,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final destinations = await DatabaseHelper.instance.getAllDestinations();
-      setState(() {
-        _destinations = destinations;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
+
       if (mounted) {
+        setState(() {
+          // Create mutable copies of the destination maps
+          _destinations = destinations
+              .map((dest) => Map<String, dynamic>.from(dest))
+              .toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading destinations: ${e.toString()}'),
@@ -70,10 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Travvel',
-          style: theme.appBarTheme.titleTextStyle,
-        ),
+        title: _buildAppBarTitle(theme),
         actions: [
           IconButton(
             icon: CustomIconWidget(
@@ -137,15 +140,17 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _navigateToAddDestination,
-        icon: CustomIconWidget(
-          iconName: 'add',
-          color: theme.colorScheme.onPrimary,
-          size: 24,
-        ),
-        label: const Text('Add Destination'),
-      ),
+      floatingActionButton: _destinations.isNotEmpty
+          ? FloatingActionButton(
+              onPressed: _showAllDestinationsOnMap,
+              tooltip: 'View All on Map',
+              child: CustomIconWidget(
+                iconName: 'map',
+                color: theme.colorScheme.onPrimary,
+                size: 24,
+              ),
+            )
+          : null,
       bottomNavigationBar: CustomBottomBar(
         currentIndex: 0,
         onTap: (index) {
@@ -153,6 +158,30 @@ class _HomeScreenState extends State<HomeScreen> {
             CustomBottomBarNavigation.navigateToIndex(context, index);
           }
         },
+      ),
+    );
+  }
+
+  /// Build app bar title with styled text
+  Widget _buildAppBarTitle(ThemeData theme) {
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: 'Tra',
+            style: theme.appBarTheme.titleTextStyle,
+          ),
+          TextSpan(
+            text: 'vv',
+            style: theme.appBarTheme.titleTextStyle?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          TextSpan(
+            text: 'el',
+            style: theme.appBarTheme.titleTextStyle,
+          ),
+        ],
       ),
     );
   }
@@ -199,11 +228,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     await _loadDestinations();
 
-    setState(() {
-      _isRefreshing = false;
-    });
-
     if (mounted) {
+      setState(() {
+        _isRefreshing = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Destinations refreshed'),
@@ -286,12 +315,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   size: 24,
                 ),
                 title: Text(
-                  'View on Map',
+                  'View All on Map',
                   style: theme.textTheme.bodyLarge,
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.pushNamed(context, '/map-view-screen');
+                  _showAllDestinationsOnMap();
                 },
               ),
               const SizedBox(height: 8),
@@ -329,6 +358,11 @@ class _HomeScreenState extends State<HomeScreen> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  /// Show all destinations on map
+  void _showAllDestinationsOnMap() {
+    Navigator.pushNamed(context, '/map-view-screen');
   }
 
   /// Navigasi ke layar tambah destinasi
@@ -382,7 +416,9 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.pushNamed(
       context,
       '/map-view-screen',
-      arguments: destination,
+      arguments: {
+        'focusDestination': destination,
+      },
     );
   }
 

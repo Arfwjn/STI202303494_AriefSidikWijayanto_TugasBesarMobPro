@@ -86,12 +86,13 @@ class DatabaseHelper {
     );
   }
 
+  /// Search destinations by name only (not description)
   Future<List<Map<String, dynamic>>> searchDestinations(String query) async {
     final db = await database;
     return await db.query(
       'destinations',
-      where: 'name LIKE ? OR description LIKE ?',
-      whereArgs: ['%$query%', '%$query%'],
+      where: 'name LIKE ?',
+      whereArgs: ['%$query%'],
       orderBy: 'created_at DESC',
     );
   }
