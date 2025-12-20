@@ -226,7 +226,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
 
           // My location button
           Positioned(
-            bottom: 24,
+            bottom: 26,
             right: 16,
             child: FloatingActionButton(
               onPressed: _getCurrentLocation,

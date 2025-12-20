@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../services/database_helper.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../add_destination_screen/widgets/location_picker_widget.dart';
 import './widgets/coordinates_section_widget.dart';
 import './widgets/form_fields_widget.dart';
 import './widgets/photo_section_widget.dart';
@@ -36,6 +38,11 @@ class _EditDestinationScreenState extends State<EditDestinationScreen> {
   bool _isUpdating = false;
   bool _photoRemoved = false;
 
+  // Mini map variables
+  GoogleMapController? _miniMapController;
+  final Set<Marker> _miniMapMarkers = {};
+  bool _hasValidLocation = false;
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +57,22 @@ class _EditDestinationScreenState extends State<EditDestinationScreen> {
         widget.destination['longitude']?.toString() ?? '';
     _currentImagePath = widget.destination['photo_path'];
 
+    // Check if we have valid coordinates
+    if (_latitudeController.text.isNotEmpty &&
+        _longitudeController.text.isNotEmpty) {
+      final lat = double.tryParse(_latitudeController.text);
+      final lng = double.tryParse(_longitudeController.text);
+      if (lat != null &&
+          lng != null &&
+          lat >= -90 &&
+          lat <= 90 &&
+          lng >= -180 &&
+          lng <= 180) {
+        _hasValidLocation = true;
+        _updateMiniMapMarker();
+      }
+    }
+
     // Parse opening hours from database format
     final openingHours = widget.destination['opening_hours'] as String?;
     if (openingHours != null && openingHours.isNotEmpty) {
@@ -62,8 +85,54 @@ class _EditDestinationScreenState extends State<EditDestinationScreen> {
 
     _nameController.addListener(_onFormChanged);
     _descriptionController.addListener(_onFormChanged);
-    _latitudeController.addListener(_onFormChanged);
-    _longitudeController.addListener(_onFormChanged);
+    _latitudeController.addListener(_onLocationChanged);
+    _longitudeController.addListener(_onLocationChanged);
+  }
+
+  void _onLocationChanged() {
+    final lat = double.tryParse(_latitudeController.text);
+    final lng = double.tryParse(_longitudeController.text);
+
+    if (lat != null &&
+        lng != null &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180) {
+      setState(() {
+        _hasValidLocation = true;
+        _hasChanges = true;
+      });
+      _updateMiniMapMarker();
+    } else {
+      setState(() {
+        _hasValidLocation = false;
+      });
+    }
+  }
+
+  void _updateMiniMapMarker() {
+    if (!_hasValidLocation) return;
+
+    final lat = double.parse(_latitudeController.text);
+    final lng = double.parse(_longitudeController.text);
+    final location = LatLng(lat, lng);
+
+    setState(() {
+      _miniMapMarkers.clear();
+      _miniMapMarkers.add(
+        Marker(
+          markerId: const MarkerId('selected_location'),
+          position: location,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        ),
+      );
+    });
+
+    // Animate camera to new location
+    _miniMapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(location, 15),
+    );
   }
 
   TimeOfDay? _parseTimeOfDay(String timeString) {
@@ -241,6 +310,49 @@ class _EditDestinationScreenState extends State<EditDestinationScreen> {
     }
   }
 
+  Future<void> _handlePickFromMap() async {
+    try {
+      LatLng? initialLocation;
+
+      if (_latitudeController.text.isNotEmpty &&
+          _longitudeController.text.isNotEmpty) {
+        final lat = double.tryParse(_latitudeController.text);
+        final lng = double.tryParse(_longitudeController.text);
+        if (lat != null && lng != null) {
+          initialLocation = LatLng(lat, lng);
+        }
+      }
+
+      final LatLng? result = await Navigator.push<LatLng>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LocationPickerWidget(
+            initialLocation: initialLocation,
+          ),
+        ),
+      );
+
+      if (result != null) {
+        setState(() {
+          _latitudeController.text = result.latitude.toStringAsFixed(6);
+          _longitudeController.text = result.longitude.toStringAsFixed(6);
+          _hasChanges = true;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Location selected from map'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed to pick location: ${e.toString()}');
+    }
+  }
+
   Future<void> _updateDestination() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -371,6 +483,7 @@ class _EditDestinationScreenState extends State<EditDestinationScreen> {
     _descriptionController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
+    _miniMapController?.dispose();
     super.dispose();
   }
 
@@ -449,13 +562,70 @@ class _EditDestinationScreenState extends State<EditDestinationScreen> {
                       latitudeController: _latitudeController,
                       longitudeController: _longitudeController,
                       onUpdateLocation: _updateLocation,
+                      onPickFromMap: _handlePickFromMap,
                     ),
+
+                    // Mini Map Preview
+                    if (_hasValidLocation) ...[
+                      SizedBox(height: 3.h),
+                      _buildSectionTitle(theme, 'Location Preview'),
+                      SizedBox(height: 2.h),
+                      _buildMiniMap(theme),
+                    ],
+
                     SizedBox(height: 4.h),
                   ],
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(ThemeData theme, String title) {
+    return Text(
+      title,
+      style: theme.textTheme.titleMedium?.copyWith(
+        color: theme.colorScheme.primary,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  Widget _buildMiniMap(ThemeData theme) {
+    final lat = double.parse(_latitudeController.text);
+    final lng = double.parse(_longitudeController.text);
+
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.dividerColor,
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: GoogleMap(
+          onMapCreated: (controller) {
+            _miniMapController = controller;
+          },
+          initialCameraPosition: CameraPosition(
+            target: LatLng(lat, lng),
+            zoom: 15,
+          ),
+          markers: _miniMapMarkers,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          scrollGesturesEnabled: false,
+          zoomGesturesEnabled: false,
+          rotateGesturesEnabled: false,
+          tiltGesturesEnabled: false,
+          mapType: MapType.normal,
         ),
       ),
     );

@@ -9,12 +9,14 @@ class CoordinatesSectionWidget extends StatelessWidget {
   final TextEditingController latitudeController;
   final TextEditingController longitudeController;
   final VoidCallback onUpdateLocation;
+  final VoidCallback? onPickFromMap;
 
   const CoordinatesSectionWidget({
     super.key,
     required this.latitudeController,
     required this.longitudeController,
     required this.onUpdateLocation,
+    this.onPickFromMap,
   });
 
   @override
@@ -128,20 +130,50 @@ class CoordinatesSectionWidget extends StatelessWidget {
                   },
                 ),
                 SizedBox(height: 2.h),
+
+                // Pick from Map button (if callback provided)
+                if (onPickFromMap != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: onPickFromMap,
+                      icon: CustomIconWidget(
+                        iconName: 'map',
+                        color: theme.colorScheme.onPrimary,
+                        size: 20,
+                      ),
+                      label: Text(
+                        'Pick from Map',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 1.5.h),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 1.h),
+                ],
+
+                // Update Location from GPS button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
+                  child: OutlinedButton.icon(
                     onPressed: onUpdateLocation,
                     icon: CustomIconWidget(
                       iconName: 'gps_fixed',
-                      color: theme.colorScheme.onPrimary,
+                      color: theme.colorScheme.primary,
                       size: 20,
                     ),
                     label: Text(
-                      'Update Location from GPS',
+                      'Use Current Location',
                       style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.onPrimary,
+                        color: theme.colorScheme.primary,
                       ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 1.5.h),
                     ),
                   ),
                 ),
