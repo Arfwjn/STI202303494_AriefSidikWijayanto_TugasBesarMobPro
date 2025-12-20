@@ -240,7 +240,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       clipBehavior: Clip.none,
       alignment: Alignment.bottomRight,
       children: [
-        // Speed dial buttons - harus di atas backdrop
+        // Main FAB
+        IgnorePointer(
+          ignoring: _isFabExpanded,
+          child: AnimatedBuilder(
+            animation: _fabAnimationController,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _fabScaleAnimation.value,
+                child: FloatingActionButton(
+                  onPressed: _isFabExpanded ? null : _toggleFab,
+                  tooltip: _isFabExpanded ? 'Close' : 'Quick Actions',
+                  backgroundColor: _isFabExpanded
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.primary,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) {
+                      return ScaleTransition(
+                        scale: animation,
+                        child: child,
+                      );
+                    },
+                    child: Icon(
+                      _isFabExpanded ? Icons.close : Icons.apps,
+                      key: ValueKey(_isFabExpanded),
+                      color: theme.colorScheme.onPrimary,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        // Speed dial buttons - harus di atas main FAB
         if (_isFabExpanded) ...[
           _buildSpeedDialButton(
             theme: theme,
@@ -303,38 +338,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             offset: 290,
           ),
         ],
-
-        // Main FAB
-        AnimatedBuilder(
-          animation: _fabAnimationController,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _fabScaleAnimation.value,
-              child: FloatingActionButton(
-                onPressed: _toggleFab,
-                tooltip: _isFabExpanded ? 'Close' : 'Quick Actions',
-                backgroundColor: _isFabExpanded
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.primary,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, animation) {
-                    return ScaleTransition(
-                      scale: animation,
-                      child: child,
-                    );
-                  },
-                  child: Icon(
-                    _isFabExpanded ? Icons.close : Icons.apps,
-                    key: ValueKey(_isFabExpanded),
-                    color: theme.colorScheme.onPrimary,
-                    size: 28,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
       ],
     );
   }
