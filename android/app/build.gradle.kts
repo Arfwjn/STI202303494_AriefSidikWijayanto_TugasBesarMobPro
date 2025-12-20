@@ -18,7 +18,7 @@ if (localPropertiesFile.exists()) {
 // Get Google Maps API Key
 val googleMapsApiKey = localProperties.getProperty("googleMapsApiKey")
     ?: System.getenv("GOOGLE_MAPS_API_KEY")
-    ?: "AIzaSyDelfYcbxnCJKF5X56clemyFIZbAQKI4Oo" // Fallback
+    ?: "AIzaSyCkknVRZSvyOd9CIxu1PTXsJu5LNjqjNkY" // Fallback
 
 android {
     namespace = "com.example.travvels"
@@ -36,8 +36,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.travvels"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdkVersion (21)
+        targetSdkVersion(flutter.targetSdkVersion)
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         
@@ -45,7 +45,7 @@ android {
         manifestPlaceholders["googleMapsApiKey"] = googleMapsApiKey
         
         // Debug log
-        println("🔑 Google Maps API Key: ${googleMapsApiKey.take(10)}...")
+        println("Google Maps API Key: ${googleMapsApiKey.take(10)}...")
     }
 
     buildTypes {
