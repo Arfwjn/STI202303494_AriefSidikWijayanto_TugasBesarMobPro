@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'dart:math' show Random;
 
 import '../../core/app_export.dart';
@@ -37,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _initializeFabAnimations();
   }
 
+  // ... (Bagian animasi FAB, initState, dispose tetap sama) ...
   void _initializeFabAnimations() {
     _fabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -45,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     _fabRotateAnimation = Tween<double>(
       begin: 0.0,
-      end: 0.875, // 315 degrees (7/8 of a full rotation)
+      end: 0.875,
     ).animate(CurvedAnimation(
       parent: _fabAnimationController,
       curve: Curves.easeInOut,
@@ -87,13 +91,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  /// Load destinations from database
   Future<void> _loadDestinations() async {
     setState(() => _isLoading = true);
-
     try {
       final destinations = await DatabaseHelper.instance.getAllDestinations();
-
       if (mounted) {
         setState(() {
           _destinations = destinations
@@ -151,15 +152,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         body: Stack(
           children: [
-            // Main content
             SafeArea(
               child: Column(
                 children: [
                   SearchBarWidget(
                     onSearch: (query) {
-                      setState(() {
-                        _searchQuery = query;
-                      });
+                      setState(() => _searchQuery = query);
                       _closeFab();
                     },
                     initialQuery: _searchQuery,
@@ -168,14 +166,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: _isLoading
                         ? Center(
                             child: CircularProgressIndicator(
-                              color: theme.colorScheme.primary,
-                            ),
+                                color: theme.colorScheme.primary),
                           )
                         : _filteredDestinations.isEmpty
                             ? _searchQuery.isEmpty
                                 ? EmptyStateWidget(
-                                    onAddDestination: _navigateToAddDestination,
-                                  )
+                                    onAddDestination: _navigateToAddDestination)
                                 : _buildNoResultsWidget(theme)
                             : RefreshIndicator(
                                 onRefresh: _handleRefresh,
@@ -186,6 +182,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   itemBuilder: (context, index) {
                                     final destination =
                                         _filteredDestinations[index];
+                                    // PERBAIKAN: Menambahkan onShare
                                     return DestinationCardWidget(
                                       destination: destination,
                                       onTap: () => _navigateToDestinationDetail(
@@ -196,6 +193,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           _showDeleteConfirmation(destination),
                                       onViewOnMap: () =>
                                           _navigateToMapView(destination),
+                                      onShare: () =>
+                                          _shareSingleDestination(destination),
                                     );
                                   },
                                 ),
@@ -204,19 +203,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
               ),
             ),
-
-            // Backdrop overlay when FAB is expanded
             if (_isFabExpanded)
               Positioned.fill(
                 child: GestureDetector(
                   onTap: _closeFab,
-                  child: Container(
-                    color: Colors.black.withOpacity(0.5),
-                  ),
+                  child: Container(color: Colors.black.withOpacity(0.5)),
                 ),
               ),
-
-            // PERBAIKAN: Memindahkan FAB ke dalam Stack body agar hit-test (klik) berfungsi dengan benar
             Positioned(
               bottom: 16,
               right: 16,
@@ -224,7 +217,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
-        // floatingActionButton: _buildSpeedDialFab(theme), // DIHAPUS: Dipindah ke body
         bottomNavigationBar: CustomBottomBar(
           currentIndex: 0,
           onTap: (index) {
@@ -238,135 +230,110 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // PERBAIKAN: Mengubah struktur dari Stack menjadi Column dan menggunakan AnimatedBuilder
+  // ... (Method _buildSpeedDialFab, _buildSpeedDialButton, _buildAppBarTitle, _buildNoResultsWidget sama seperti sebelumnya) ...
+  // Salin bagian ini dari kode sebelumnya untuk menghemat tempat, karena tidak berubah.
+  // Pastikan Anda menyertakan method-method tersebut.
+
   Widget _buildSpeedDialFab(ThemeData theme) {
     return AnimatedBuilder(
-        animation: _fabAnimationController,
-        builder: (context, child) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // Speed dial buttons
-              // Ditampilkan jika controller sedang animasi atau FAB expanded
-              // Urutan dibalik karena Column dirender dari atas ke bawah
-              if (!_fabAnimationController.isDismissed) ...[
-                _buildSpeedDialButton(
-                  theme: theme,
-                  icon: 'share',
-                  label: 'Share All',
-                  backgroundColor: Colors.teal,
-                  onTap: () async {
-                    print('🎯 Share All clicked!');
-                    _closeFab();
-                    await Future.delayed(const Duration(milliseconds: 100));
-                    if (mounted) {
-                      _shareAllDestinations();
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildSpeedDialButton(
-                  theme: theme,
-                  icon: 'explore',
-                  label: 'Random Pick',
-                  backgroundColor: Colors.orange,
-                  onTap: () async {
-                    print('🎯 Random Pick clicked!');
-                    _closeFab();
-                    await Future.delayed(const Duration(milliseconds: 100));
-                    if (mounted) {
-                      _pickRandomDestination();
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildSpeedDialButton(
-                  theme: theme,
-                  icon: 'insights',
-                  label: 'Statistics',
-                  backgroundColor: Colors.deepPurple,
-                  onTap: () async {
-                    print('🎯 Statistics clicked!');
-                    _closeFab();
-                    await Future.delayed(const Duration(milliseconds: 100));
-                    if (mounted) {
-                      _showStatistics();
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildSpeedDialButton(
-                  theme: theme,
-                  icon: 'add_location',
-                  label: 'Add Destination',
-                  backgroundColor: theme.colorScheme.primary,
-                  onTap: () async {
-                    print('🎯 Add Destination clicked!');
-                    _closeFab();
-                    await Future.delayed(const Duration(milliseconds: 100));
-                    if (mounted) {
-                      _navigateToAddDestination();
-                    }
-                  },
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // Main FAB
-              // PERBAIKAN: Menghapus IgnorePointer yang membuat tombol tidak bisa diklik saat expanded
-              Transform.scale(
-                scale: _fabScaleAnimation.value,
-                child: FloatingActionButton(
-                  onPressed:
-                      _toggleFab, // Tombol toggle harus selalu bisa diklik
-                  tooltip: _isFabExpanded ? 'Close' : 'Quick Actions',
-                  backgroundColor: _isFabExpanded
-                      ? theme.colorScheme.error
-                      : theme.colorScheme.primary,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, animation) {
-                      return ScaleTransition(
-                        scale: animation,
-                        child: child,
-                      );
-                    },
-                    child: Icon(
-                      _isFabExpanded ? Icons.close : Icons.apps,
-                      key: ValueKey(_isFabExpanded),
-                      color: theme.colorScheme.onPrimary,
-                      size: 28,
-                    ),
+      animation: _fabAnimationController,
+      builder: (context, child) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!_fabAnimationController.isDismissed) ...[
+              _buildSpeedDialButton(
+                theme: theme,
+                icon: 'share',
+                label: 'Share All',
+                backgroundColor: Colors.teal,
+                onTap: () async {
+                  _closeFab();
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  if (mounted) _shareAllDestinations();
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildSpeedDialButton(
+                theme: theme,
+                icon: 'explore',
+                label: 'Random Pick',
+                backgroundColor: Colors.orange,
+                onTap: () async {
+                  _closeFab();
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  if (mounted) _pickRandomDestination();
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildSpeedDialButton(
+                theme: theme,
+                icon: 'insights',
+                label: 'Statistics',
+                backgroundColor: Colors.deepPurple,
+                onTap: () async {
+                  _closeFab();
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  if (mounted) _showStatistics();
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildSpeedDialButton(
+                theme: theme,
+                icon: 'add_location',
+                label: 'Add Destination',
+                backgroundColor: theme.colorScheme.primary,
+                onTap: () async {
+                  _closeFab();
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  if (mounted) _navigateToAddDestination();
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
+            Transform.scale(
+              scale: _fabScaleAnimation.value,
+              child: FloatingActionButton(
+                onPressed: _toggleFab,
+                tooltip: _isFabExpanded ? 'Close' : 'Quick Actions',
+                backgroundColor: _isFabExpanded
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.primary,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _isFabExpanded ? Icons.close : Icons.apps,
+                    key: ValueKey(_isFabExpanded),
+                    color: theme.colorScheme.onPrimary,
+                    size: 28,
                   ),
                 ),
               ),
-            ],
-          );
-        });
+            ),
+          ],
+        );
+      },
+    );
   }
 
-  // PERBAIKAN: Menghapus Positioned karena sekarang berada di dalam Column
   Widget _buildSpeedDialButton({
     required ThemeData theme,
     required String icon,
     required String label,
     required Color backgroundColor,
     required VoidCallback onTap,
-    // offset parameter dihapus karena tidak dibutuhkan lagi
   }) {
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 300),
       tween: Tween(begin: 0.0, end: _isFabExpanded ? 1.0 : 0.0),
       curve: Curves.easeOutBack,
       builder: (context, value, child) {
-        // Clamp value to prevent negative opacity
         final clampedValue = value.clamp(0.0, 1.0);
         return Transform.scale(
           scale: clampedValue,
           child: Opacity(
             opacity: clampedValue,
-            // IgnorePointer tetap ada untuk mencegah klik saat animasi closing
             child: IgnorePointer(
               ignoring: !_isFabExpanded,
               child: child,
@@ -377,10 +344,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Label
           GestureDetector(
             onTap: () {
-              print('🔥 Label tapped: $label');
               HapticFeedback.lightImpact();
               onTap();
             },
@@ -407,11 +372,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           const SizedBox(width: 12),
-          // Button
           FloatingActionButton(
             mini: true,
             onPressed: () {
-              print('🔥 FAB tapped: $label');
               HapticFeedback.mediumImpact();
               onTap();
             },
@@ -428,31 +391,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// Build app bar title with styled text
   Widget _buildAppBarTitle(ThemeData theme) {
     return RichText(
       text: TextSpan(
         children: [
+          TextSpan(text: 'Tra', style: theme.appBarTheme.titleTextStyle),
           TextSpan(
-            text: 'Tra',
-            style: theme.appBarTheme.titleTextStyle,
-          ),
-          TextSpan(
-            text: 'vv',
-            style: theme.appBarTheme.titleTextStyle?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          TextSpan(
-            text: 'el',
-            style: theme.appBarTheme.titleTextStyle,
-          ),
+              text: 'vv',
+              style: theme.appBarTheme.titleTextStyle
+                  ?.copyWith(color: theme.colorScheme.primary)),
+          TextSpan(text: 'el', style: theme.appBarTheme.titleTextStyle),
         ],
       ),
     );
   }
 
-  /// Widget untuk menampilkan pesan tidak ada hasil pencarian
   Widget _buildNoResultsWidget(ThemeData theme) {
     return Center(
       child: Padding(
@@ -461,54 +414,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CustomIconWidget(
-              iconName: 'search_off',
-              color: theme.colorScheme.onSurfaceVariant,
-              size: 64,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No Results Found',
-              style: theme.textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Try adjusting your search terms',
-              style: theme.textTheme.bodyMedium?.copyWith(
+                iconName: 'search_off',
                 color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
+                size: 64),
+            const SizedBox(height: 16),
+            Text('No Results Found',
+                style: theme.textTheme.headlineSmall,
+                textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text('Try adjusting your search terms',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                textAlign: TextAlign.center),
           ],
         ),
       ),
     );
   }
 
+  // ... (Method _handleRefresh, _showFilterOptions, _sortByName, _sortByDate, _showStatistics, _buildStatItem, _pickRandomDestination sama seperti sebelumnya) ...
   Future<void> _handleRefresh() async {
     HapticFeedback.mediumImpact();
-    setState(() {
-      _isRefreshing = true;
-    });
-
+    setState(() => _isRefreshing = true);
     await _loadDestinations();
-
     if (mounted) {
-      setState(() {
-        _isRefreshing = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Destinations refreshed'),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () {},
-          ),
-        ),
-      );
+      setState(() => _isRefreshing = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Destinations refreshed'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ));
     }
   }
 
@@ -518,8 +453,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (context) {
         final theme = Theme.of(context);
         return SafeArea(
@@ -531,63 +465,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: theme.dividerColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+                    color: theme.dividerColor,
+                    borderRadius: BorderRadius.circular(2)),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Filter Options',
-                  style: theme.textTheme.titleLarge,
-                ),
+                child:
+                    Text('Filter Options', style: theme.textTheme.titleLarge),
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: CustomIconWidget(
-                  iconName: 'sort_by_alpha',
-                  color: theme.colorScheme.primary,
-                  size: 24,
-                ),
-                title: Text(
-                  'Sort by Name',
-                  style: theme.textTheme.bodyLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _sortByName();
-                },
-              ),
+                  leading: CustomIconWidget(
+                      iconName: 'sort_by_alpha',
+                      color: theme.colorScheme.primary,
+                      size: 24),
+                  title: Text('Sort by Name', style: theme.textTheme.bodyLarge),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _sortByName();
+                  }),
               ListTile(
-                leading: CustomIconWidget(
-                  iconName: 'access_time',
-                  color: theme.colorScheme.primary,
-                  size: 24,
-                ),
-                title: Text(
-                  'Sort by Date Added',
-                  style: theme.textTheme.bodyLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _sortByDate();
-                },
-              ),
+                  leading: CustomIconWidget(
+                      iconName: 'access_time',
+                      color: theme.colorScheme.primary,
+                      size: 24),
+                  title: Text('Sort by Date Added',
+                      style: theme.textTheme.bodyLarge),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _sortByDate();
+                  }),
               ListTile(
-                leading: CustomIconWidget(
-                  iconName: 'location_on',
-                  color: theme.colorScheme.primary,
-                  size: 24,
-                ),
-                title: Text(
-                  'View All on Map',
-                  style: theme.textTheme.bodyLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showAllDestinationsOnMap();
-                },
-              ),
+                  leading: CustomIconWidget(
+                      iconName: 'location_on',
+                      color: theme.colorScheme.primary,
+                      size: 24),
+                  title:
+                      Text('View All on Map', style: theme.textTheme.bodyLarge),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showAllDestinationsOnMap();
+                  }),
               const SizedBox(height: 8),
             ],
           ),
@@ -601,12 +519,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _destinations
           .sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Sorted by name'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Sorted by name'), duration: Duration(seconds: 2)));
   }
 
   void _sortByDate() {
@@ -617,75 +531,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return bDate.compareTo(aDate);
       });
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Sorted by date added'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Sorted by date added'), duration: Duration(seconds: 2)));
   }
 
   void _showStatistics() {
-    print('📊 _showStatistics called');
     final theme = Theme.of(context);
     final total = _destinations.length;
-
-    print('📊 Total destinations: $total');
-
     if (total == 0) {
-      print('📊 No destinations, showing snackbar');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('No destinations yet'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+          duration: Duration(seconds: 2)));
       return;
     }
-
-    print('📊 Calculating statistics...');
-
     final oldest = _destinations.reduce((a, b) {
       final aDate = DateTime.parse(a['created_at'] as String);
       final bDate = DateTime.parse(b['created_at'] as String);
       return aDate.isBefore(bDate) ? a : b;
     });
-
     final newest = _destinations.reduce((a, b) {
       final aDate = DateTime.parse(a['created_at'] as String);
       final bDate = DateTime.parse(b['created_at'] as String);
       return aDate.isAfter(bDate) ? a : b;
     });
-
     final withPhotos = _destinations
         .where((d) => (d['photo_path'] as String?)?.isNotEmpty ?? false)
         .length;
-
-    print(
-        '📊 Stats calculated - Photos: $withPhotos, Oldest: ${oldest['name']}, Newest: ${newest['name']}');
-    print('📊 Showing dialog...');
-
     showDialog(
       context: context,
       builder: (context) {
-        print('📊 Building dialog widget');
         return AlertDialog(
           backgroundColor: theme.colorScheme.primaryContainer,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               CustomIconWidget(
-                iconName: 'insights',
-                color: theme.colorScheme.primary,
-                size: 28,
-              ),
+                  iconName: 'insights',
+                  color: theme.colorScheme.primary,
+                  size: 28),
               const SizedBox(width: 12),
-              Text(
-                'Travel Statistics',
-                style: theme.textTheme.titleLarge,
-              ),
+              Text('Travel Statistics', style: theme.textTheme.titleLarge),
             ],
           ),
           content: Column(
@@ -693,42 +579,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStatItem(
-                theme,
-                'Total Destinations',
-                total.toString(),
-                Icons.place,
-              ),
+                  theme, 'Total Destinations', total.toString(), Icons.place),
               const SizedBox(height: 12),
-              _buildStatItem(
-                theme,
-                'With Photos',
-                withPhotos.toString(),
-                Icons.photo_camera,
-              ),
+              _buildStatItem(theme, 'With Photos', withPhotos.toString(),
+                  Icons.photo_camera),
               const SizedBox(height: 12),
-              _buildStatItem(
-                theme,
-                'Without Photos',
-                (total - withPhotos).toString(),
-                Icons.hide_image,
-              ),
+              _buildStatItem(theme, 'Without Photos',
+                  (total - withPhotos).toString(), Icons.hide_image),
               const Divider(height: 24),
-              Text(
-                'Oldest: ${oldest['name']}',
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text('Oldest: ${oldest['name']}',
+                  style: theme.textTheme.bodyMedium),
               const SizedBox(height: 8),
-              Text(
-                'Newest: ${newest['name']}',
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text('Newest: ${newest['name']}',
+                  style: theme.textTheme.bodyMedium),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close')),
           ],
         );
       },
@@ -740,63 +609,44 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-      ),
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(8)),
       child: Row(
         children: [
           Icon(icon, color: theme.colorScheme.primary, size: 24),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(label, style: theme.textTheme.bodyMedium),
-          ),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+          Text(value,
+              style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
   void _pickRandomDestination() {
-    print('🎲 _pickRandomDestination called');
-
     if (_destinations.isEmpty) {
-      print('🎲 No destinations available');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('No destinations yet'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+          duration: Duration(seconds: 2)));
       return;
     }
-
-    print('🎲 Picking random from ${_destinations.length} destinations');
     final random = (_destinations.toList()..shuffle()).first;
-    print('🎲 Selected: ${random['name']}');
-
     showDialog(
       context: context,
       builder: (context) {
-        print('🎲 Building dialog widget');
         final theme = Theme.of(context);
         return AlertDialog(
           backgroundColor: theme.colorScheme.primaryContainer,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               CustomIconWidget(
-                iconName: 'explore',
-                color: theme.colorScheme.primary,
-                size: 28,
-              ),
+                  iconName: 'explore',
+                  color: theme.colorScheme.primary,
+                  size: 28),
               const SizedBox(width: 12),
               const Text('Random Pick'),
             ],
@@ -805,22 +655,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'How about visiting...',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+              Text('How about visiting...',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: theme.colorScheme.primary,
-                    width: 2,
-                  ),
+                  border:
+                      Border.all(color: theme.colorScheme.primary, width: 2),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -828,41 +673,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Row(
                       children: [
                         CustomIconWidget(
-                          iconName: 'place',
-                          color: theme.colorScheme.primary,
-                          size: 24,
-                        ),
+                            iconName: 'place',
+                            color: theme.colorScheme.primary,
+                            size: 24),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            random['name'] as String,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                            child: Text(random['name'] as String,
+                                style: theme.textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold))),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      random['description'] as String,
-                      style: theme.textTheme.bodyMedium,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    Text(random['description'] as String,
+                        style: theme.textTheme.bodyMedium,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 12),
                     Row(
                       children: [
                         CustomIconWidget(
-                          iconName: 'access_time',
-                          color: theme.colorScheme.onSurfaceVariant,
-                          size: 16,
-                        ),
+                            iconName: 'access_time',
+                            color: theme.colorScheme.onSurfaceVariant,
+                            size: 16),
                         const SizedBox(width: 4),
-                        Text(
-                          random['opening_hours'] as String? ?? 'N/A',
-                          style: theme.textTheme.bodySmall,
-                        ),
+                        Text(random['opening_hours'] as String? ?? 'N/A',
+                            style: theme.textTheme.bodySmall),
                       ],
                     ),
                   ],
@@ -872,44 +707,118 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Maybe Later'),
-            ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Maybe Later')),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _navigateToDestinationDetail(random);
-              },
-              child: const Text('View Details'),
-            ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _navigateToDestinationDetail(random);
+                },
+                child: const Text('View Details')),
           ],
         );
       },
     );
   }
 
-  void _shareAllDestinations() {
-    print('📤 _shareAllDestinations called');
+  // FITUR BARU: Share Single Destination
+  void _shareSingleDestination(Map<String, dynamic> destination) {
+    final theme = Theme.of(context);
+    final buffer = StringBuffer();
 
+    // Format teks untuk satu destinasi
+    buffer.writeln('📍 ${destination['name']}');
+    buffer.writeln(
+        '   Coordinates: ${destination['latitude']}, ${destination['longitude']}');
+    buffer.writeln('   Opening Hours: ${destination['opening_hours']}');
+    buffer.writeln('   Description: ${destination['description']}');
+    buffer.writeln('\nShared via Travvel App');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.primaryContainer,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              CustomIconWidget(
+                  iconName: 'share',
+                  color: theme.colorScheme.primary,
+                  size: 28),
+              const SizedBox(width: 12),
+              const Text('Share Destination'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Share "${destination['name']}"',
+                  style: theme.textTheme.bodyMedium),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8)),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: CustomIconWidget(
+                          iconName: 'content_copy',
+                          color: theme.colorScheme.primary,
+                          size: 24),
+                      title: const Text('Copy to Clipboard'),
+                      onTap: () {
+                        Clipboard.setData(
+                            ClipboardData(text: buffer.toString()));
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Copied to clipboard!'),
+                                duration: Duration(seconds: 2)));
+                      },
+                    ),
+                    Divider(height: 1, color: theme.dividerColor),
+                    ListTile(
+                      leading: CustomIconWidget(
+                          iconName: 'file_download',
+                          color: theme.colorScheme.primary,
+                          size: 24),
+                      title: const Text('Export as Text'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _exportDestinationsToText(buffer.toString());
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Share all destinations
+  void _shareAllDestinations() {
     if (_destinations.isEmpty) {
-      print('📤 No destinations to share');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('No destinations to share'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+          duration: Duration(seconds: 2)));
       return;
     }
-
-    print(
-        '📤 Creating shareable text for ${_destinations.length} destinations');
     final theme = Theme.of(context);
-
-    // Create shareable text
     final buffer = StringBuffer();
     buffer.writeln('🗺️ My Travel Destinations\n');
-
     for (int i = 0; i < _destinations.length; i++) {
       final dest = _destinations[i];
       buffer.writeln('${i + 1}. ${dest['name']}');
@@ -917,101 +826,110 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       buffer.writeln('   ⏰ ${dest['opening_hours']}');
       buffer.writeln('   📝 ${dest['description']}\n');
     }
-
     buffer.writeln('Generated by Travvel App');
 
-    print('📤 Showing share dialog');
-
     showDialog(
-        context: context,
-        builder: (context) {
-          print('📤 Building dialog widget');
-          return AlertDialog(
-            backgroundColor: theme.colorScheme.primaryContainer,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Row(
-              children: [
-                CustomIconWidget(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.primaryContainer,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              CustomIconWidget(
                   iconName: 'share',
                   color: theme.colorScheme.primary,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                const Text('Share Destinations'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Share ${_destinations.length} destinations',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
+                  size: 28),
+              const SizedBox(width: 12),
+              const Text('Share Destinations'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Share ${_destinations.length} destinations',
+                  style: theme.textTheme.bodyMedium),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: CustomIconWidget(
+                    borderRadius: BorderRadius.circular(8)),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: CustomIconWidget(
                           iconName: 'content_copy',
                           color: theme.colorScheme.primary,
-                          size: 24,
-                        ),
-                        title: const Text('Copy to Clipboard'),
-                        onTap: () {
-                          Clipboard.setData(
-                              ClipboardData(text: buffer.toString()));
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          size: 24),
+                      title: const Text('Copy to Clipboard'),
+                      onTap: () {
+                        Clipboard.setData(
+                            ClipboardData(text: buffer.toString()));
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Copied to clipboard!'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                      ),
-                      Divider(height: 1, color: theme.dividerColor),
-                      ListTile(
-                        leading: CustomIconWidget(
+                                content: Text('Copied to clipboard!'),
+                                duration: Duration(seconds: 2)));
+                      },
+                    ),
+                    Divider(height: 1, color: theme.dividerColor),
+                    ListTile(
+                      leading: CustomIconWidget(
                           iconName: 'file_download',
                           color: theme.colorScheme.primary,
-                          size: 24,
-                        ),
-                        title: const Text('Export as Text'),
-                        onTap: () {
-                          // Future: Implement file export
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Export feature coming soon!'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                          size: 24),
+                      title: const Text('Export as Text'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _exportDestinationsToText(buffer.toString());
+                      },
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
               ),
             ],
-          );
-        });
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
+          ],
+        );
+      },
+    );
   }
 
+  /// Fungsi untuk export text ke file dan share
+  Future<void> _exportDestinationsToText(String content) async {
+    try {
+      final directory = await getTemporaryDirectory();
+      final fileName =
+          'travel_destinations_${DateTime.now().millisecondsSinceEpoch}.txt';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsString(content);
+      final result = await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Shared from Travvel App',
+      );
+      if (result.status == ShareResultStatus.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('File exported successfully')));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Failed to export: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error));
+      }
+    }
+  }
+
+  // ... (Sisa method navigasi sama seperti sebelumnya: _showAllDestinationsOnMap, _navigateToAddDestination, _navigateToDestinationDetail, _navigateToEditDestination, _navigateToMapView, _showDeleteConfirmation, _deleteDestination) ...
   void _showAllDestinationsOnMap() {
     Navigator.pushNamed(context, '/map-view-screen');
   }
@@ -1019,17 +937,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _navigateToAddDestination() async {
     final result =
         await Navigator.pushNamed(context, '/add-destination-screen');
-
     if (result == true && mounted) {
       await _loadDestinations();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Destination added successfully'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Destination added successfully'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ));
     }
   }
 
@@ -1037,39 +951,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       Map<String, dynamic> destination) async {
     _closeFab();
     final result = await Navigator.pushNamed(
-      context,
-      '/destination-detail-screen',
-      arguments: destination,
-    );
-
-    if (result == true && mounted) {
-      await _loadDestinations();
-    }
+        context, '/destination-detail-screen',
+        arguments: destination);
+    if (result == true && mounted) await _loadDestinations();
   }
 
   Future<void> _navigateToEditDestination(
       Map<String, dynamic> destination) async {
     _closeFab();
     final result = await Navigator.pushNamed(
-      context,
-      '/edit-destination-screen',
-      arguments: destination,
-    );
-
-    if (result == true && mounted) {
-      await _loadDestinations();
-    }
+        context, '/edit-destination-screen',
+        arguments: destination);
+    if (result == true && mounted) await _loadDestinations();
   }
 
   void _navigateToMapView(Map<String, dynamic> destination) {
     _closeFab();
-    Navigator.pushNamed(
-      context,
-      '/map-view-screen',
-      arguments: {
-        'focusDestination': destination,
-      },
-    );
+    Navigator.pushNamed(context, '/map-view-screen',
+        arguments: {'focusDestination': destination});
   }
 
   void _showDeleteConfirmation(Map<String, dynamic> destination) {
@@ -1080,31 +979,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final theme = Theme.of(context);
         return AlertDialog(
           backgroundColor: theme.colorScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Text(
-            'Delete Destination',
-            style: theme.textTheme.titleLarge,
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text('Delete Destination', style: theme.textTheme.titleLarge),
           content: Text(
-            'Are you sure you want to delete "${destination['name']}"? This action cannot be undone.',
-            style: theme.textTheme.bodyMedium,
-          ),
+              'Are you sure you want to delete "${destination['name']}"? This action cannot be undone.',
+              style: theme.textTheme.bodyMedium),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
                 _deleteDestination(destination);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.error,
-                foregroundColor: theme.colorScheme.onError,
-              ),
+                  backgroundColor: theme.colorScheme.error,
+                  foregroundColor: theme.colorScheme.onError),
               child: const Text('Delete'),
             ),
           ],
@@ -1115,29 +1007,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _deleteDestination(Map<String, dynamic> destination) async {
     HapticFeedback.mediumImpact();
-
     try {
       await DatabaseHelper.instance.deleteDestination(destination['id'] as int);
-
       await _loadDestinations();
-
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('${destination['name']} deleted'),
             duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+            behavior: SnackBarBehavior.floating));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: const Text('Failed to delete destination'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+            backgroundColor: Theme.of(context).colorScheme.error));
       }
     }
   }

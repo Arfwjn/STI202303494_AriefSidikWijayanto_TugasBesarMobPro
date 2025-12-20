@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../../../core/app_export.dart';
+import '../../../widgets/custom_icon_widget.dart'; // Pastikan import ini ada
 
 /// Destination card widget untuk menampilkan informasi destination
 class DestinationCardWidget extends StatelessWidget {
@@ -11,6 +12,7 @@ class DestinationCardWidget extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onViewOnMap;
+  final VoidCallback onShare; // FITUR BARU: Callback untuk share
 
   const DestinationCardWidget({
     super.key,
@@ -19,6 +21,7 @@ class DestinationCardWidget extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onViewOnMap,
+    required this.onShare, // FITUR BARU: Wajib diisi
   });
 
   @override
@@ -73,7 +76,6 @@ class DestinationCardWidget extends StatelessWidget {
       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
       child: Stack(
         children: [
-          // Display image if available
           if (photoPath != null && photoPath.isNotEmpty)
             Image.file(
               File(photoPath),
@@ -86,8 +88,6 @@ class DestinationCardWidget extends StatelessWidget {
             )
           else
             _buildPlaceholderImage(theme),
-
-          // Opening hours badge
           Positioned(
             top: 12,
             right: 12,
@@ -234,6 +234,22 @@ class DestinationCardWidget extends StatelessWidget {
                   color: theme.dividerColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
+              ),
+              // FITUR BARU: Menu Share
+              ListTile(
+                leading: CustomIconWidget(
+                  iconName: 'share',
+                  color: theme.colorScheme.primary,
+                  size: 24,
+                ),
+                title: Text(
+                  'Share',
+                  style: theme.textTheme.bodyLarge,
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  onShare();
+                },
               ),
               ListTile(
                 leading: CustomIconWidget(
