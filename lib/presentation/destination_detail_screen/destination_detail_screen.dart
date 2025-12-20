@@ -213,9 +213,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
       context,
       '/map-view-screen',
       arguments: {
-        'latitude': _destinationData!['latitude'],
-        'longitude': _destinationData!['longitude'],
-        'name': _destinationData!['name'],
+        'focusDestination': _destinationData,
       },
     );
   }

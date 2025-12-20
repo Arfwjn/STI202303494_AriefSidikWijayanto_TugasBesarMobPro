@@ -230,10 +230,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ... (Method _buildSpeedDialFab, _buildSpeedDialButton, _buildAppBarTitle, _buildNoResultsWidget sama seperti sebelumnya) ...
-  // Salin bagian ini dari kode sebelumnya untuk menghemat tempat, karena tidak berubah.
-  // Pastikan Anda menyertakan method-method tersebut.
-
   Widget _buildSpeedDialFab(ThemeData theme) {
     return AnimatedBuilder(
       animation: _fabAnimationController,
@@ -432,7 +428,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ... (Method _handleRefresh, _showFilterOptions, _sortByName, _sortByDate, _showStatistics, _buildStatItem, _pickRandomDestination sama seperti sebelumnya) ...
   Future<void> _handleRefresh() async {
     HapticFeedback.mediumImpact();
     setState(() => _isRefreshing = true);
@@ -721,7 +716,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // FITUR BARU: Share Single Destination
+  // Share Single Destination
   void _shareSingleDestination(Map<String, dynamic> destination) {
     final theme = Theme.of(context);
     final buffer = StringBuffer();
@@ -929,7 +924,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  // ... (Sisa method navigasi sama seperti sebelumnya: _showAllDestinationsOnMap, _navigateToAddDestination, _navigateToDestinationDetail, _navigateToEditDestination, _navigateToMapView, _showDeleteConfirmation, _deleteDestination) ...
   void _showAllDestinationsOnMap() {
     Navigator.pushNamed(context, '/map-view-screen');
   }

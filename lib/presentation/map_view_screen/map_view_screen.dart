@@ -38,6 +38,10 @@ class _MapViewScreenState extends State<MapViewScreen> {
   String _errorMessage = '';
   Map<String, dynamic>? _focusDestination;
 
+// FITUR BARU: Variabel untuk 'Tap to Add'
+  LatLng? _tappedLocation; // Lokasi yang diklik user
+  Marker? _temporaryMarker; // Marker sementara (biasanya warna beda)
+
   // Flag to track if widget is still mounted
   bool _isDisposed = false;
 
@@ -160,49 +164,140 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   Future<void> _getCurrentLocationAsync() async {
     try {
+      // 1. Cek Service GPS
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         debugPrint('MapViewScreen: Location services disabled');
+        _showError('Location services are disabled. Please enable GPS.');
         return;
       }
 
+      // 2. Cek Permission
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           debugPrint('MapViewScreen: Location permission denied');
+          _showError('Location permission denied');
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
         debugPrint('MapViewScreen: Location permission permanently denied');
+        _showError(
+            'Location permission is permanently denied. Please enable it in settings.');
         return;
       }
 
-      _currentPosition = await Geolocator.getCurrentPosition(
+      final lastPosition = await Geolocator.getLastKnownPosition();
+      if (lastPosition != null && mounted) {
+        _safeSetState(() {
+          _currentPosition = lastPosition;
+          if (_mapCreated && _mapController != null) {
+            _mapController?.animateCamera(
+              CameraUpdate.newLatLngZoom(
+                  LatLng(lastPosition.latitude, lastPosition.longitude), 15),
+            );
+          }
+        });
+      }
+
+      final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 10,
-          timeLimit: Duration(seconds: 10),
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 5),
         ),
       ).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 5),
         onTimeout: () {
-          debugPrint('MapViewScreen: Location timeout, using default');
-          throw TimeoutException('Location timeout');
+          debugPrint('MapViewScreen: Location request timed out');
+          if (_currentPosition != null) return _currentPosition!;
+          throw TimeoutException('Gagal mendapatkan lokasi tepat waktu');
         },
       );
+
+      _safeSetState(() {
+        _currentPosition = position;
+      });
 
       debugPrint(
           'MapViewScreen: Got location: ${_currentPosition?.latitude}, ${_currentPosition?.longitude}');
     } catch (e) {
       debugPrint('MapViewScreen: Error getting location: $e');
+      if (_currentPosition == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Using default location (GPS signal weak)')),
+          );
+        }
+      }
+    }
+  }
+
+  void _onMapTapped(LatLng position) {
+    HapticFeedback.selectionClick();
+    debugPrint("Map Tapped at: $position");
+
+    _safeSetState(() {
+      // 1. Simpan lokasi yang diklik
+      _tappedLocation = position;
+
+      // 2. Reset selected location
+      _selectedLocation = null;
+
+      // 3. Buat Marker Sementara
+      _temporaryMarker = Marker(
+        markerId: const MarkerId('temp_selection'),
+        position: position,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: const InfoWindow(title: "New Location?"),
+      );
+
+      // 4. Update kumpulan markers
+      _createMarkers();
+    });
+
+    _mapController?.animateCamera(CameraUpdate.newLatLng(position));
+  }
+
+  void _clearTemporarySelection() {
+    _safeSetState(() {
+      _tappedLocation = null;
+      _temporaryMarker = null;
+      _createMarkers();
+    });
+  }
+
+  void _navigateToAddFromMap() async {
+    if (_tappedLocation == null) return;
+
+    final lat = _tappedLocation!.latitude;
+    final lng = _tappedLocation!.longitude;
+
+    // Reset temporary selection sebelum navigasi
+    final selectedPos = _tappedLocation;
+    _clearTemporarySelection();
+
+    // Navigasi
+    final result = await Navigator.pushNamed(
+      context,
+      '/add-destination-screen',
+      arguments: {
+        'initial_lat': lat,
+        'initial_lng': lng,
+      },
+    );
+
+    // Jika berhasil nambah, reload map
+    if (result == true) {
+      _loadDestinations();
+      _createMarkers();
     }
   }
 
   Future<void> _createMarkers() async {
-    _markers.clear();
+    Set<Marker> newMarkers = {};
 
     for (var destination in _destinations) {
       try {
@@ -220,21 +315,37 @@ class _MapViewScreenState extends State<MapViewScreen> {
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
           onTap: () => _onMarkerTapped(destination),
         );
-        _markers.add(marker);
+        newMarkers.add(marker);
       } catch (e) {
-        debugPrint(
-            'MapViewScreen: Error creating marker for ${destination["id"]}: $e');
+        debugPrint('Error creating marker: $e');
       }
     }
 
-    _safeSetState(() {});
+    if (_temporaryMarker != null) {
+      newMarkers.add(_temporaryMarker!);
+    }
 
-    debugPrint('MapViewScreen: Created ${_markers.length} markers');
+    _safeSetState(() {
+      _markers.clear();
+      _markers.addAll(newMarkers);
+    });
+
+    if (_focusDestination != null && _mapCreated && _mapController != null) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _focusOnDestination(_focusDestination!);
+        _focusDestination = null;
+      });
+    }
   }
 
   void _onMarkerTapped(Map<String, dynamic> destination) {
     HapticFeedback.lightImpact();
+    // Saat marker asli diklik, hilangkan temporary marker
     _safeSetState(() {
+      _tappedLocation = null;
+      _temporaryMarker = null;
+      _createMarkers();
+
       _selectedLocation = LatLng(
         destination["latitude"] as double,
         destination["longitude"] as double,
@@ -285,30 +396,14 @@ class _MapViewScreenState extends State<MapViewScreen> {
   }
 
   void _focusOnDestination(Map<String, dynamic> destination) {
-    if (_mapController == null || !_mapCreated || _isDisposed) {
-      debugPrint(
-          'MapViewScreen: Cannot focus on destination - controller not ready');
-      return;
-    }
-
+    if (_mapController == null || !_mapCreated || _isDisposed) return;
     try {
-      final location = LatLng(
-        destination['latitude'] as double,
-        destination['longitude'] as double,
-      );
-
-      debugPrint(
-          'MapViewScreen: Focusing on destination: ${destination['name']}');
-
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(location, 15),
-      );
-
-      _safeSetState(() {
-        _selectedLocation = location;
-      });
+      final loc = LatLng(destination['latitude'], destination['longitude']);
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 17));
+      _mapController
+          ?.showMarkerInfoWindow(MarkerId(destination['id'].toString()));
     } catch (e) {
-      debugPrint('MapViewScreen: Error focusing on destination: $e');
+      debugPrint('$e');
     }
   }
 
@@ -363,11 +458,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   void _toggleMapType() {
     HapticFeedback.lightImpact();
-    _safeSetState(() {
-      _currentMapType = _currentMapType == MapType.normal
-          ? MapType.satellite
-          : MapType.normal;
-    });
+    _safeSetState(() => _currentMapType =
+        _currentMapType == MapType.normal ? MapType.satellite : MapType.normal);
   }
 
   void _centerOnUserLocation() async {
@@ -497,14 +589,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
   }
 
   Widget _buildBody(ThemeData theme) {
-    if (_isLoading) {
-      return _buildLoadingScreen(theme);
-    }
-
-    if (_errorMessage.isNotEmpty) {
-      return _buildErrorScreen(theme);
-    }
-
+    if (_isLoading) return _buildLoadingScreen(theme);
+    if (_errorMessage.isNotEmpty) return _buildErrorScreen(theme);
     return _buildMapView(theme);
   }
 
@@ -595,6 +681,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
           compassEnabled: true,
           mapToolbarEnabled: false,
           minMaxZoomPreference: MinMaxZoomPreference(2, 20),
+          onTap: _onMapTapped,
         ),
         if (_showSearchOverlay)
           SearchOverlayWidget(
@@ -603,6 +690,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
             onDestinationSelected: _onDestinationSelected,
             onClose: _toggleSearchOverlay,
           ),
+
+        // Map Controls (Layer & Type)
         Positioned(
           top: 16,
           right: 16,
@@ -611,10 +700,13 @@ class _MapViewScreenState extends State<MapViewScreen> {
             onToggleMapType: _toggleMapType,
           ),
         ),
+
+        // My Location Button
         Positioned(
-          bottom: 24,
+          bottom: 24, // Sesuaikan agar tidak tertutup floating box
           right: 16,
           child: FloatingActionButton(
+            heroTag: 'my_loc_btn',
             onPressed: _centerOnUserLocation,
             tooltip: 'My Location',
             child: CustomIconWidget(
@@ -624,7 +716,91 @@ class _MapViewScreenState extends State<MapViewScreen> {
             ),
           ),
         ),
+
+        if (_tappedLocation != null)
+          Positioned(
+            bottom: 24,
+            left: 16,
+            right: 80,
+            child: _buildLocationSelectionCard(theme),
+          ),
       ],
+    );
+  }
+
+  // Widget Floating Cards
+  Widget _buildLocationSelectionCard(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Selected Location',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              InkWell(
+                onTap: _clearTemporarySelection,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Icon(Icons.close,
+                      size: 20, color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.location_on,
+                  size: 16, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  '${_tappedLocation!.latitude.toStringAsFixed(5)}, ${_tappedLocation!.longitude.toStringAsFixed(5)}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _navigateToAddFromMap,
+              icon: const Icon(Icons.add_location_alt, size: 18),
+              label: const Text('Add Destination'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

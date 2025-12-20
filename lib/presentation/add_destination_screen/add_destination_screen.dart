@@ -41,6 +41,25 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
   bool _hasValidLocation = false;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    if (args != null) {
+      if (args.containsKey('initial_lat') && args.containsKey('initial_lng')) {
+        if (_latitudeController.text.isEmpty) {
+          _latitudeController.text = args['initial_lat'].toString();
+        }
+
+        if (_longitudeController.text.isEmpty) {
+          _longitudeController.text = args['initial_lng'].toString();
+        }
+      }
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
     // Check if coordinates were passed from map view

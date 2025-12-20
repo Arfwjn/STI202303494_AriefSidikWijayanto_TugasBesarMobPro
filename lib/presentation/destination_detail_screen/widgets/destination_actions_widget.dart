@@ -44,24 +44,15 @@ class DestinationActionsWidget extends StatelessWidget {
       padding: EdgeInsets.all(4.w),
       child: Column(
         children: [
-          // Tombol View on Map - navigate to map with this destination centered
+          // Tombol View on Map
           SizedBox(
             width: double.infinity,
             height: 6.h,
             child: ElevatedButton(
               onPressed: () {
                 HapticFeedback.lightImpact();
-                // Navigate to map view screen with destination arguments
-                Navigator.pushNamed(
-                  context,
-                  '/map-view-screen',
-                  arguments: {
-                    'center_on_destination': true,
-                    'latitude': latitude,
-                    'longitude': longitude,
-                    'name': destinationName,
-                  },
-                );
+                // PERBAIKAN: Gunakan callback parent agar data yang dikirim konsisten
+                onViewOnMap();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
