@@ -2,9 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:uuid/uuid.dart'; // Pastikan package ini ada di pubspec.yaml
-
-// Import service yang sudah Anda buat sebelumnya
+import 'package:uuid/uuid.dart';
 import '../../../services/place_search_service.dart';
 
 /// Widget untuk memilih lokasi dari map
@@ -251,7 +249,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
       ),
       body: Stack(
         children: [
-          // 1. Map (Existing)
+          // 1. Map
           if (_isLoading)
             Center(
               child: CircularProgressIndicator(
@@ -274,7 +272,6 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
             ),
 
           // 2. SEARCH BAR & SUGGESTIONS
-          // Kita letakkan di atas Map menggunakan Positioned
           Positioned(
             top: 10,
             left: 16,

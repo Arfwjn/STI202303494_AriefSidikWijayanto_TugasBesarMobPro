@@ -26,7 +26,6 @@ class AppTheme {
   static const Color interactiveOverlay = Color(0x1A00D4FF);
   static const Color dividerColor = Color(0xFF3A3A5C);
 
-  // Shadow colors for minimal elevation
   static const Color shadowLight = Color(0x0F000000);
   static const Color shadowDark = Color(0x0F000000);
 
@@ -203,86 +202,6 @@ class AppTheme {
       prefixIconColor: textSecondaryLight,
       suffixIconColor: textSecondaryLight,
     ),
-    switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return electricAccent;
-        }
-        return textSecondaryLight;
-      }),
-      trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return electricAccent.withValues(alpha: 0.5);
-        }
-        return dividerColor;
-      }),
-    ),
-    checkboxTheme: CheckboxThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return electricAccent;
-        }
-        return Colors.transparent;
-      }),
-      checkColor: WidgetStateProperty.all(primarySurfaceLight),
-      side: BorderSide(color: dividerColor, width: 1),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-      ),
-    ),
-    radioTheme: RadioThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return electricAccent;
-        }
-        return dividerColor;
-      }),
-    ),
-    progressIndicatorTheme: ProgressIndicatorThemeData(
-      color: electricAccent,
-      linearTrackColor: dividerColor,
-      circularTrackColor: dividerColor,
-    ),
-    sliderTheme: SliderThemeData(
-      activeTrackColor: electricAccent,
-      thumbColor: electricAccent,
-      overlayColor: interactiveOverlay,
-      inactiveTrackColor: dividerColor,
-      valueIndicatorColor: electricAccent,
-      valueIndicatorTextStyle: GoogleFonts.jetBrainsMono(
-        color: primarySurfaceLight,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-    tabBarTheme: TabBarTheme(
-      labelColor: electricAccent,
-      unselectedLabelColor: textSecondaryLight,
-      indicatorColor: electricAccent,
-      indicatorSize: TabBarIndicatorSize.label,
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.1,
-      ),
-      unselectedLabelStyle: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0.1,
-      ),
-    ),
-    tooltipTheme: TooltipThemeData(
-      decoration: BoxDecoration(
-        color: secondarySurfaceLight,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      textStyle: GoogleFonts.inter(
-        color: textPrimaryLight,
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: secondarySurfaceLight,
       contentTextStyle: GoogleFonts.inter(
@@ -301,26 +220,6 @@ class AppTheme {
       color: dividerColor,
       thickness: 1,
       space: 1,
-    ),
-    chipTheme: ChipThemeData(
-      backgroundColor: secondarySurfaceLight,
-      selectedColor: electricAccent.withValues(alpha: 0.2),
-      disabledColor: dividerColor,
-      labelStyle: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        color: textPrimaryLight,
-      ),
-      secondaryLabelStyle: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        color: textSecondaryLight,
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: dividerColor, width: 1),
-      ),
     ),
     dialogTheme: DialogThemeData(backgroundColor: secondarySurfaceLight),
   );
@@ -498,86 +397,6 @@ class AppTheme {
       prefixIconColor: textSecondaryDark,
       suffixIconColor: textSecondaryDark,
     ),
-    switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return electricAccent;
-        }
-        return textSecondaryDark;
-      }),
-      trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return electricAccent.withValues(alpha: 0.5);
-        }
-        return dividerColor;
-      }),
-    ),
-    checkboxTheme: CheckboxThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return electricAccent;
-        }
-        return Colors.transparent;
-      }),
-      checkColor: WidgetStateProperty.all(primarySurfaceDark),
-      side: BorderSide(color: dividerColor, width: 1),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-      ),
-    ),
-    radioTheme: RadioThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return electricAccent;
-        }
-        return dividerColor;
-      }),
-    ),
-    progressIndicatorTheme: ProgressIndicatorThemeData(
-      color: electricAccent,
-      linearTrackColor: dividerColor,
-      circularTrackColor: dividerColor,
-    ),
-    sliderTheme: SliderThemeData(
-      activeTrackColor: electricAccent,
-      thumbColor: electricAccent,
-      overlayColor: interactiveOverlay,
-      inactiveTrackColor: dividerColor,
-      valueIndicatorColor: electricAccent,
-      valueIndicatorTextStyle: GoogleFonts.jetBrainsMono(
-        color: primarySurfaceDark,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-    tabBarTheme: TabBarTheme(
-      labelColor: electricAccent,
-      unselectedLabelColor: textSecondaryDark,
-      indicatorColor: electricAccent,
-      indicatorSize: TabBarIndicatorSize.label,
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.1,
-      ),
-      unselectedLabelStyle: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0.1,
-      ),
-    ),
-    tooltipTheme: TooltipThemeData(
-      decoration: BoxDecoration(
-        color: secondarySurfaceDark,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      textStyle: GoogleFonts.inter(
-        color: textPrimaryDark,
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: secondarySurfaceDark,
       contentTextStyle: GoogleFonts.inter(
@@ -596,26 +415,6 @@ class AppTheme {
       color: dividerColor,
       thickness: 1,
       space: 1,
-    ),
-    chipTheme: ChipThemeData(
-      backgroundColor: secondarySurfaceDark,
-      selectedColor: electricAccent.withValues(alpha: 0.2),
-      disabledColor: dividerColor,
-      labelStyle: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        color: textPrimaryDark,
-      ),
-      secondaryLabelStyle: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        color: textSecondaryDark,
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: dividerColor, width: 1),
-      ),
     ),
     dialogTheme: DialogThemeData(backgroundColor: secondarySurfaceDark),
   );

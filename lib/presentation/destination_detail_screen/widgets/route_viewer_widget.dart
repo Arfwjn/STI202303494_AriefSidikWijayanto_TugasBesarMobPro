@@ -90,7 +90,7 @@ class _RouteViewerWidgetState extends State<RouteViewerWidget> {
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('❌ Error initializing map: $e');
+      debugPrint('Error initializing map: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to get current location';

@@ -29,7 +29,6 @@ class _SearchOverlayWidgetState extends State<SearchOverlayWidget> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
-  // Mengganti mock data dengan hasil pencarian database
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
 

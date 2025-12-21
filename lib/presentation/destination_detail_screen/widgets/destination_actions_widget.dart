@@ -51,7 +51,6 @@ class DestinationActionsWidget extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {
                 HapticFeedback.lightImpact();
-                // PERBAIKAN: Gunakan callback parent agar data yang dikirim konsisten
                 onViewOnMap();
               },
               style: ElevatedButton.styleFrom(

@@ -51,22 +51,22 @@ class EmptyStateWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            // const SizedBox(height: 32),
-            // ElevatedButton.icon(
-            //   onPressed: onAddDestination,
-            //   icon: CustomIconWidget(
-            //     iconName: 'add',
-            //     color: theme.colorScheme.onPrimary,
-            //     size: 20,
-            //   ),
-            //   label: const Text('Add Your First Destination'),
-            //   style: ElevatedButton.styleFrom(
-            //     padding: const EdgeInsets.symmetric(
-            //       horizontal: 24,
-            //       vertical: 16,
-            //     ),
-            //   ),
-            // ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: onAddDestination,
+              icon: CustomIconWidget(
+                iconName: 'add',
+                color: theme.colorScheme.onPrimary,
+                size: 20,
+              ),
+              label: const Text('Add Your First Destination'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+              ),
+            ),
           ],
         ),
       ),

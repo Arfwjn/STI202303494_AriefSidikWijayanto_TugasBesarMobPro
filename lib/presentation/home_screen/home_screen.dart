@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:math' show Random;
 
 import '../../core/app_export.dart';
 import '../../services/database_helper.dart';
@@ -40,7 +39,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _initializeFabAnimations();
   }
 
-  // ... (Bagian animasi FAB, initState, dispose tetap sama) ...
   void _initializeFabAnimations() {
     _fabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -721,11 +719,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final buffer = StringBuffer();
 
     // Format teks untuk satu destinasi
-    buffer.writeln('📍 ${destination['name']}');
+    buffer.writeln('${destination['name']}');
     buffer.writeln(
         '   Coordinates: ${destination['latitude']}, ${destination['longitude']}');
-    buffer.writeln('   Opening Hours: ${destination['opening_hours']}');
-    buffer.writeln('   Description: ${destination['description']}');
+    buffer.writeln('Opening Hours: ${destination['opening_hours']}');
+    buffer.writeln('Description: ${destination['description']}');
     buffer.writeln('\nShared via Travvel App');
 
     showDialog(
@@ -816,7 +814,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     for (int i = 0; i < _destinations.length; i++) {
       final dest = _destinations[i];
       buffer.writeln('${i + 1}. ${dest['name']}');
-      buffer.writeln('   📍 ${dest['latitude']}, ${dest['longitude']}');
+      buffer.writeln('   ${dest['latitude']}, ${dest['longitude']}');
       buffer.writeln('   ⏰ ${dest['opening_hours']}');
       buffer.writeln('   📝 ${dest['description']}\n');
     }

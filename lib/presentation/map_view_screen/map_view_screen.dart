@@ -9,11 +9,8 @@ import 'package:uuid/uuid.dart';
 import '../../core/app_export.dart';
 import '../../services/database_helper.dart';
 import '../../services/place_search_service.dart';
-import '../../widgets/custom_app_bar.dart';
 import '../../widgets/custom_bottom_bar.dart';
-import '../../widgets/custom_icon_widget.dart';
 import './widgets/destination_list_sheet_widget.dart';
-import './widgets/map_controls_widget.dart';
 
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key});
@@ -115,7 +112,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   Future<void> _onSuggestionSelected(PlaceSuggestion suggestion) async {
     try {
-      FocusScope.of(context).unfocus(); // Tutup keyboard
+      FocusScope.of(context).unfocus();
 
       final detail =
           await _placeService.getPlaceDetailFromId(suggestion.placeId);
@@ -127,7 +124,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
         CameraUpdate.newLatLngZoom(location, 16),
       );
 
-      _onMapTapped(location); // Trigger logika marker sementara
+      _onMapTapped(location);
 
       _safeSetState(() {
         _searchController.clear();
@@ -333,7 +330,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
         if (_focusDestination == null) {
           _fitAllMarkers();
         } else {
-          // Logic focus sudah ditangani di _createMarkers
           _createMarkers();
         }
       }
@@ -429,7 +425,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      // Hapus CustomAppBar agar Search Bar bisa melayang (overlay) di atas Map
       body: Stack(
         children: <Widget>[
           // 1. GOOGLE MAP LAYER
@@ -513,7 +508,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
                     Container(
                       margin: const EdgeInsets.only(top: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white, // FIX: Background List Putih
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
@@ -538,7 +533,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
                             title: Text(
                               item.description,
                               style: const TextStyle(
-                                  color: Colors.black87, // FIX: Teks List Hitam
+                                  color: Colors.black87,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500),
                             ),

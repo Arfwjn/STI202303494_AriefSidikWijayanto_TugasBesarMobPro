@@ -22,7 +22,7 @@ class DirectionsService {
     required LatLng destination,
   }) async {
     print(
-        '🗺️ Getting directions from ${origin.latitude},${origin.longitude} to ${destination.latitude},${destination.longitude}');
+        'Getting directions from ${origin.latitude},${origin.longitude} to ${destination.latitude},${destination.longitude}');
 
     try {
       final response = await _dio.get(
@@ -36,11 +36,11 @@ class DirectionsService {
         },
       );
 
-      print('📡 Directions API Status Code: ${response.statusCode}');
+      print('Directions API Status Code: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = response.data;
-        print('📡 Directions API Status: ${data['status']}');
+        print('Directions API Status: ${data['status']}');
 
         // Check status dari API
         if (data['status'] == 'OK') {
@@ -53,8 +53,8 @@ class DirectionsService {
           final distanceInKm = distanceInMeters / 1000.0;
 
           print('Route found:');
-          print('   Distance: ${leg['distance']['text']}');
-          print('   Duration: ${leg['duration']['text']}');
+          print('Distance: ${leg['distance']['text']}');
+          print('Duration: ${leg['duration']['text']}');
 
           // Decode polyline untuk menampilkan rute di map
           final encodedPolyline =
@@ -76,15 +76,6 @@ class DirectionsService {
           if (data['error_message'] != null) {
             print('Error message: ${data['error_message']}');
           }
-
-          // Common error statuses:
-          // - NOT_FOUND: route tidak ditemukan
-          // - ZERO_RESULTS: tidak ada rute tersedia
-          // - MAX_WAYPOINTS_EXCEEDED: terlalu banyak waypoints
-          // - INVALID_REQUEST: parameter tidak valid
-          // - OVER_QUERY_LIMIT: quota exceeded
-          // - REQUEST_DENIED: API key invalid atau tidak authorized
-          // - UNKNOWN_ERROR: server error
 
           return null;
         }

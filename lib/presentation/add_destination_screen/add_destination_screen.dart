@@ -403,7 +403,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
 
                 SizedBox(height: 2.h),
 
-                // Existing Opening Hours Widget
+                // Opening Hours Widget
                 OpeningHoursSectionWidget(
                   openingTime: _openingTime,
                   closingTime: _closingTime,
